@@ -13,6 +13,7 @@ if [[ -n "$1" ]]; then
 else
 	# Run all .py scripts in directory
 	for script in *.py; do
+		echo "Now running $script"
 		python3 $script
 	done
 fi
