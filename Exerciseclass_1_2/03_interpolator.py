@@ -8,6 +8,7 @@ class interpolator:
         """
         Initialize with known x- and y-values
         """
+        assert interpolator.__strictly_monotonic(x), "x should be strictly monotonic"
         self.__x = x
         self.__y = y
 
@@ -18,10 +19,30 @@ class interpolator:
     @property
     def y(self):
         return self.__y
+    
+    @staticmethod
+    def __strictly_monotonic(array):
+        """
+        Check if an array is strictly monotonic
+        """
+        strictly_increasing = all(a < b for a, b in zip(array, array[1:]))
+        strictly_decreasing = all(a > b for a, b in zip(array, array[1:]))
+
+        return strictly_increasing | strictly_decreasing
 
     @staticmethod
     def bisection(a, array):
         """
+        Use bisection algorithm to find where in array `a` should
+        be. If `a` is in `array`, will return that index
+
+        Parameters
+        ----------
+        a : float
+            Value to insert
+        array : list | ndarray
+            
+
         Find where in array x should be
         using bisection algorithm
         If a is equal to an element in a, will
