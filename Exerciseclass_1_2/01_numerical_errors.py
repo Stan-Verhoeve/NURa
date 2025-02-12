@@ -2,7 +2,7 @@ import numpy as np
 
 # For plotting
 import matplotlib
-matplotlib.use("Qt5Agg")
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
 def prod(array: list) -> float:
@@ -128,6 +128,7 @@ def main():
     # Plot result
     fig = plt.figure(dpi=200)
     ax = fig.add_subplot(111)
+    ax.set_title("Difference for sinc(7)")
 
     ax.scatter(truncations, Difference)
     ax.axhline(0, c="k")
