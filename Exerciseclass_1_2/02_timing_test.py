@@ -1,5 +1,4 @@
-# Use subprocess to run timeit in shell
-import subprocess
+import timeit
 
 def main():
     # Setup for timeit
@@ -18,16 +17,19 @@ def main():
     "masses = np.random.normal(loc=1e6, scale=1e5, size=N)\n"
     )
     
+    # Number or repeats for timeit
+    N = 50_000
+
     # Runs for timeit
     direct_run = "2 * G * masses / c ** 2"
     predefined_run = "2 * G * masses * c_inv2"
     
-    # Calculate Schwarzschild radius and time it
-    print("Direct use of equation:")
-    subprocess.run(["python3", "-m", "timeit", "-n", "50000", "-s", setup, direct_run])
+    time_direct = timeit.timeit(direct_run, setup=setup, number=N)
+    time_predefined = timeit.timeit(predefined_run, setup=setup, number=N)
 
-    print("\nHaving pre-defined c_inv2:")
-    subprocess.run(["python3", "-m", "timeit", "-n", "50000", "-s", setup, predefined_run])
+    # Calculate Schwarzschild radius and time it
+    print(f"Average time direct use of equation: {time_direct / N * 1e6:.3f} usec")
+    print(f"Average time having pre-defined c_inv2: {time_predefined / N * 1e6:.3f} usec")
 
 if __name__ in ("__main__"):
     main()
