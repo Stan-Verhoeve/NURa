@@ -1,4 +1,4 @@
-def divisible_by_2m(num, m, use_shift = True):
+def divisible_by_2m(num: int, m: int, use_shift: bool = True) -> bool:
     """
     Check if a number is divisble by a power of 2.
 
@@ -30,10 +30,7 @@ def divisible_by_2m(num, m, use_shift = True):
     return divisible
 
 def main():
-    user_input = input("Provide integer number and power, separated by a comma, e.g. '12, 2'\n").split(",")
-    num = int(user_input[0])
-    power = int(user_input[1])
-
+    num, power = 256, 4
     divisible = divisible_by_2m(num, power, use_shift=False)
     print(f"{num} divisible by 2**{power}: {divisible} (no bit shifting)")
 
