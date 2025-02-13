@@ -295,6 +295,62 @@ def main():
     ax.legend()
     plt.show()
 
+    # TODO: Check if this is indeed the correct way to interpolate
+    # in two dimensions
+
+    # Get width and height of original image
+    width, height = image.shape
+
+    # Interpolate s.t. image has twice the resolution
+    interp_width = int(2 * width)
+    interp_height = int(2 * height)
+
+    # Pixel coordinates of original image
+    im_x = np.arange(0, image.shape[0])
+    im_y = np.arange(0, image.shape[1])
+    
+    # (Pixel) coordinates of interpolated image
+    interp_x = np.linspace(min(im_x), max(im_x), interp_width)
+    interp_y = np.linspace(min(im_y), max(im_y), interp_height)
+
+    # Array to store interpolation along x-axis
+    interp_im_x = np.zeros((len(interp_x), len(im_y)))
+    
+    # Iterate over rows
+    for i, yi in enumerate(im_y):
+        # Interpolate along x
+        ipl = interpolator(im_x, image[:,i])
+        interpolated_row = ipl.interpolate(interp_x, kind="cubic")
+        interp_im_x[:,i] = interpolated_row
+    
+    # Array to store interpolation along both axes
+    interp_im_xy = np.zeros((len(interp_x), len(interp_y)))
+    
+    # Iterate over columns
+    for j, xj in enumerate(interp_x):
+        # Interpolate along y
+        ipl = interpolator(im_y, interp_im_x[j, :])
+        interpolated_column = ipl.interpolate(interp_y, kind="cubic")
+
+        # Since we had already interpolated the rows, we do not need
+        # to consider interpolation along x here; it is already
+        # taken care of by construction
+        interp_im_xy[j, :] = interpolated_column
+    
+    
+    # Create figure
+    fig, axs = plt.subplots(1,2, figsize=(24, 12))
+    orig_ax, interp_ax = axs
+    
+    # Plot original and interpolated image
+    orig_ax.imshow(image)
+    interp_ax.imshow(interp_im_xy)
+    
+    orig_ax.set_title("Original")
+    interp_ax.set_title("Cubic interpolated")
+
+    plt.tight_layout()
+    plt.show()
 
 if __name__ in ("__main__"):
     # test()
