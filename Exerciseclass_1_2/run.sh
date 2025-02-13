@@ -13,7 +13,13 @@ if [[ -n "$1" ]]; then
 else
 	# Run all .py scripts in directory
 	for script in *.py; do
-		echo "Now running $script"
+		# Fancy printing
+		printcmd="Now running $script"
+		varlength=${#printcmd}
+
+		printf '%*s\n' "$varlength" '' | tr ' ' '-'
+		echo $printcmd
+		echo
 		python3 $script
 	done
 fi
