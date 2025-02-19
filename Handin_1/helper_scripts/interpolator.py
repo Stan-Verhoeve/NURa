@@ -131,7 +131,9 @@ class interpolator:
         x: float | list | ndarray
             Values to interpolate on
         kind: str
-            Interpolation kind. Can be "linear" or "cubic"
+            Interpolation kind. Can be "linear" or "cubic" or "neville".
+            If "neville", will interpolate on (N-1)-degree polynomial, where N
+            is the number of nodes
 
         Returns
         -------
@@ -150,6 +152,8 @@ class interpolator:
                 interp_func = self._linear_interpolator
             case "cubic":
                 interp_func = lambda x: self._neville_interpolator(x, order=3)
+            case "neville":
+                interp_func = lambda x: self._neville_interpolator(x)
         
         # Iterate over points to interpolate
         for i, xi in enumerate(x):
@@ -229,133 +233,3 @@ class interpolator:
                 low = halfway + 1
 
         return low
-
-def test():
-    # Test function
-    func = lambda x: np.sin(2 * np.pi * x)
-    x_nodes = np.linspace(0, 1, 8)
-    y_nodes = func(x_nodes)
-    
-    # Interpolator object
-    ipl = interpolator(x_nodes, y_nodes)
-    
-    # Interpolated values
-    x_want = np.linspace(0, 1, 1000)
-    y_interp = ipl.interpolate(x_want)
-    y_interp_cubic = ipl.interpolate(x_want, kind="cubic")
-
-    # Create figure
-    fig = plt.figure(dpi=200, figsize=(12, 4))
-    ax = fig.add_subplot(111)
-        
-    # Original nodes
-    ax.scatter(x_nodes, y_nodes, c="k", marker="x")
-
-    # Interpolations
-    ax.plot(x_want, y_interp, label="Linear interpolation", c="b")
-    ax.plot(x_want, y_interp_cubic, label="Cubic interpolation", c="r", ls=":")
-
-    # Analytic function
-    ax.plot(x_want, func(x_want), c="gray", alpha=0.5, lw=6, label="Analytic")
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.legend(loc="upper right")
-    plt.show()
-
-def main():
-    from matplotlib.image import imread
-    import matplotlib
-    matplotlib.use("TkAgg")
-    import matplotlib.pyplot as plt
-    
-    # Read image and grab first row
-    image = imread("M42_128.jpg").astype(float)
-    first_row_values = image[0,:]
-    first_row_pixels = np.arange(0,first_row_values.size)
-    
-    x_want = np.linspace(0, max(first_row_pixels), 201)
-    
-    # Interpolator object
-    ipl = interpolator(first_row_pixels, first_row_values)
-    
-    # Interpolate values
-    linear_interpolated = ipl.interpolate(x_want, kind="linear")
-    cubic_interpolated = ipl.interpolate(x_want, kind="cubic")
-    
-    # Create figure
-    fig = plt.figure(dpi=300, figsize=(9,6))
-    ax = fig.add_subplot(111)
-    ax.set_title("Interpolation of first row")
-
-    # Plot original data
-    ax.plot(first_row_pixels, first_row_values, c="gray", alpha=0.5, lw=6, label="Original")
-
-    # Plot interpolations
-    ax.plot(x_want, linear_interpolated, c="b", label="Linear interpolation")
-    ax.plot(x_want, cubic_interpolated, c="r", label="Cubic interpolation", ls=":")
-
-    ax.set_xlabel("Pixels")
-    ax.set_ylabel("Intensity")
-    ax.legend()
-    plt.show()
-
-    # TODO: Check if this is indeed the correct way to interpolate
-    # in two dimensions
-
-    # Get width and height of original image
-    width, height = image.shape
-
-    # Interpolate s.t. image has twice the resolution
-    interp_width = int(2 * width)
-    interp_height = int(2 * height)
-
-    # Pixel coordinates of original image
-    im_x = np.arange(0, image.shape[0])
-    im_y = np.arange(0, image.shape[1])
-    
-    # (Pixel) coordinates of interpolated image
-    interp_x = np.linspace(min(im_x), max(im_x), interp_width)
-    interp_y = np.linspace(min(im_y), max(im_y), interp_height)
-
-    # Array to store interpolation along x-axis
-    interp_im_x = np.zeros((len(interp_x), len(im_y)))
-    
-    # Iterate over rows
-    for i, yi in enumerate(im_y):
-        # Interpolate along x
-        ipl = interpolator(im_x, image[:,i])
-        interpolated_row = ipl.interpolate(interp_x, kind="cubic")
-        interp_im_x[:,i] = interpolated_row
-    
-    # Array to store interpolation along both axes
-    interp_im_xy = np.zeros((len(interp_x), len(interp_y)))
-    
-    # Iterate over columns
-    for j, xj in enumerate(interp_x):
-        # Interpolate along y
-        ipl = interpolator(im_y, interp_im_x[j, :])
-        interpolated_column = ipl.interpolate(interp_y, kind="cubic")
-
-        # Since we had already interpolated the rows, we do not need
-        # to consider interpolation along x here; it is already
-        # taken care of by construction
-        interp_im_xy[j, :] = interpolated_column
-    
-    
-    # Create figure
-    fig, axs = plt.subplots(1,2, figsize=(24, 12))
-    orig_ax, interp_ax = axs
-    
-    # Plot original and interpolated image
-    orig_ax.imshow(image)
-    interp_ax.imshow(interp_im_xy)
-    
-    orig_ax.set_title("Original")
-    interp_ax.set_title("Cubic interpolated")
-
-    plt.tight_layout()
-    plt.show()
-
-if __name__ in ("__main__"):
-    # test()
-    main()
