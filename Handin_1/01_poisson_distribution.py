@@ -20,13 +20,6 @@ def poisson(k: int32, lbd: float32) -> float32:
     # num = l**k * exp(-l)
     # denom = k!
 
-    # Convert to log_2 space:
-    # log2(x) = ln(x) / ln(2)
-    # TODO: can do with np.log() for ln
-    #       but check if log2() is faster
-    #       and if we can do bitshifting magic
-    #       for now use np.log()
-    
     # log(a * b) == log(a) + log(b)
     # log(l**k) == k * log(l)
     # log(exp(-l)) == -l
@@ -42,19 +35,18 @@ def poisson(k: int32, lbd: float32) -> float32:
     # k! == k (k-1) (k-2) ... (2)
     # In logspace, becomes a sum:
     # log(k!) = log(k) + log(k-1) + log(k-2) ...
-    # TODO: check if np.sum is allowed
-
-    # Create arange from 2 to k
-    ks = arange(2, k+1, dtype=int32)
     
-    # log of denominator
-    # Take log and sum to get factorial
-    log_denom = int32(log(ks).sum())
+    # With an eye to memory efficiency, as opposed to runtime speed,
+    # use a for-loop to get the log of denominator
+    log_denom = float32(0.)
+
+    for ks in range(2, k + 1):
+        log_denom += float32(log(ks))
 
     # Take difference of num and denom, since log(num/denom) == log(num) - log(denom)
-    logP = float32(log_num - log_denom)
+    logP = log_num - log_denom
 
-    return logP
+    return float32(logP)
 
 def main():
     from numpy import exp
