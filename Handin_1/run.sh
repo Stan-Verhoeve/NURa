@@ -4,6 +4,13 @@
 set -e
 set -o pipefail
 
+# For hand-in 1 only:
+# Check if 'Vandermonde.txt' exists
+if [[ ! -f "Vandermonde.txt" ]]; then
+	echo "Vandermonde.txt does not exist. Grabbing..."
+	wget https://home.strw.leidenuniv.nl/~daalen/Handin_files/Vandermonde.txt
+fi
+
 # Check if folder for figures exists
 if [[ ! -d "figures" ]]; then
 	# If not, create it
