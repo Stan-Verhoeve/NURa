@@ -68,6 +68,22 @@ def polynomial(coefs, x):
 
     return y
 
+# TODO: move to helper script?
+def pretty_print_array(array, formatter=".2e", ncols=4):
+    N = len(np.asarray(array).flatten())
+    nrows = int(np.ceil(N / ncols))
+
+    padded = np.pad(array, (0, nrows * ncols - N), constant_values = np.nan)
+    padded = padded.reshape(nrows,ncols)
+
+    format_func = lambda x: f"{x:{formatter}}" if not np.isnan(x) else "     "
+
+    print(np.array2string(padded, formatter={"float_kind":format_func}, separator="   "))
+
+    return
+
+
+    
 def main():
     from helper_scripts.interpolator import interpolator
     import matplotlib.pyplot as plt
@@ -81,7 +97,8 @@ def main():
     L, U, B = to_lu(V)
     
     # Sanity check
-    print(f"LU = V: {np.all(np.isclose(V, L@U))}")
+    print("Sanity check")
+    print(f"LU = V: {np.all(np.isclose(V, L@U))}\n")
 
     # TODO: clean up code
     # TODO: do I want classes / more functions?
@@ -91,7 +108,10 @@ def main():
 
     # Coefficient vector
     c = backward_substition(U, z)
-    print(f"Polynomial coefficients:\n {c}")
+
+    # Pretty print coefficients
+    print("Polynomial coefficients:")
+    pretty_print_array(c, ncols=4)
     
 
     # TODO: Make this cleaner
@@ -150,7 +170,7 @@ def main():
 
     ax1.legend()
     
-    plt.savefig("figures/vandermonde.png", bbox_inches="tight", dpi=300)
+    plt.savefig("figures/02_vandermonde.png", bbox_inches="tight", dpi=300)
     
     # TODO: use timeit to time different approaches
 
