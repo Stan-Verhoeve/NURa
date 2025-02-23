@@ -16,25 +16,14 @@ def poisson(k: int32, lbd: float32) -> float32:
     logP: float32
         Natural log of P
     """
-
-    # num = l**k * exp(-l)
-    # denom = k!
-
-    # log(a * b) == log(a) + log(b)
-    # log(l**k) == k * log(l)
-    # log(exp(-l)) == -l
-    # Therefore log(l**k * exp(-l)) == k * log(l) - l
+    # TODO: Make vectorised?
 
     # Explicity convert k and lbd to 32bit
     k = int32(k)
     lbd = float32(lbd)
     
     # log of numerator
-    log_num = float32(k * log(lbd) - lbd)
-
-    # k! == k (k-1) (k-2) ... (2)
-    # In logspace, becomes a sum:
-    # log(k!) = log(k) + log(k-1) + log(k-2) ...
+    log_num = float32(k * float32(log(lbd)) - lbd)
     
     # With an eye to memory efficiency, as opposed to runtime speed,
     # use a for-loop to get the log of denominator
