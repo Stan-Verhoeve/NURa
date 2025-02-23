@@ -11,10 +11,13 @@ def to_lu(matrix: np.ndarray) -> np.ndarray:
     
     # Explicitly cast to float64 ndarray
     matrix = np.array(matrix, dtype=np.float64)
+    
+    # In-place matrix
     new_matrix = np.zeros_like(matrix)    
     N = len(matrix)
     
     # Identity and zero matrix
+    # TODO: remove once in-place is implemented
     L = np.eye(N, dtype=np.float64)
     U = np.zeros_like(matrix)
     
@@ -38,7 +41,7 @@ def to_lu(matrix: np.ndarray) -> np.ndarray:
 
     return L, U, new_matrix
 
-
+# TODO: make single function?
 def forward_substition(L, y):
     N = len(y)
     z = np.zeros(N)
@@ -47,6 +50,7 @@ def forward_substition(L, y):
         z[i] = y[i] - np.dot(L[i, :i], z[:i])
     return z
 
+# TODO: make single function?
 def backward_substition(U, y):
     N = len(y)
     z = np.zeros(N)
@@ -55,6 +59,8 @@ def backward_substition(U, y):
         z[i] = (y[i] - np.dot(U[i, i:], z[i:])) / U[i,i]
     return z
 
+
+# TODO: move to helper script?
 def polynomial(coefs, x):
     y = 0.
     for power,c in enumerate(coefs):
