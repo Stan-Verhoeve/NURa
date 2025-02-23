@@ -26,6 +26,14 @@ fi
 if [[ -n "$1" ]]; then
 	script="$1"
 
+	# Fancy printing
+	printcmd="Now running $script"
+	varlength=${#printcmd}
+
+	printf '%*s\n' "$varlength" '' | tr ' ' '-'
+	echo $printcmd
+	echo
+
 	# Run script provided in command line
 	python3 $script
 else
