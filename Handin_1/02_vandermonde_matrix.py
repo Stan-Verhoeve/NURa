@@ -38,16 +38,17 @@ def to_lu(matrix: np.ndarray) -> np.ndarray:
 
     return L, U, new_matrix
 
-A = np.array([[2,3,1],
-              [4,7,3],
-              [6,18,5]], dtype=np.float64)
 
-x,y = np.genfromtxt("Vandermonde.txt").T
+def main():
+    x,y = np.genfromtxt("Vandermonde.txt").T
+    
+    # Construct Vandermonde matrix
+    V = x[:,None] ** np.arange(len(x))
+    
+    L, U, B = to_lu(V)
+    
+    # Sanity check
+    print(f"LU = V: {np.all(np.isclose(V, L@U))}")
 
-vdm = x[:,None] ** np.arange(len(x))
-
-L, U, B = to_lu(vdm)
-
-print(f"LU = A: {np.all(np.isclose(vdm, L@U))}")
-
-
+if __name__ in ("__main__"):
+    main()
