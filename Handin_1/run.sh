@@ -47,19 +47,26 @@ if [[ ! -d "latex" ]]; then
 	echo "No 'latex' direcotry found. Skipping compilation..."
 else
 	# If no latex_out folder, create it
-	if [[ ! -d "latex_out" ]]; then
-		echo "Creating 'latex_out' directory..."
-		mkdir latex_out
+	if [[ ! -d "latex/OUT" ]]; then
+		echo "Creating 'OUT' directory..."
+		mkdir latex/OUT
+	else
+		# else clear it
+		echo "'OUT' directory already exists. Now clearing..."
+		rm -rf latex/OUT/*
 	fi
 	
 	# Check if there are any .tex files
-	if compgen -G "latex/*.tex" > /dev/null; then
+	if [[ -f "latex/main.tex" ]]; then
 		echo "Creating PDFs from LaTeX files"
-	
-		for file in "latex/*.tex"; do
-			pdflatex -output-dir latex_out $file
-		done
+		
+		cd latex
+		pdflatex -output-dir OUT main.tex
+		bibtex OUT/main
+		pdflatex -output-dir OUT main.tex
+		pdflatex -output-dir OUT main.tex
+		cd ..
 	else
-		echo "No .tex files found. Skipping compilation..."
+		echo "No main.tex file found. Skipping compilation..."
 	fi
 fi
