@@ -1,0 +1,23 @@
+\section{Poisson distribution}
+The Poisson probability distribution function, for integer $k$ and positive mean $\lambda$, is given by
+\begin{equation}
+	P_\lambda(k) = \frac{\lambda^k e^{-\lambda}}{k!}.
+\end{equation}
+To avoid under- and overflow, we do not evaluate the Poisson distribution as given. Instead, we transform to logarithmic space, such that
+\begin{equation}
+	\log\left(P_\lambda(k)\right) = \log\left(\frac{\lambda^k e^{-k}}{k!}\right)
+\end{equation}
+Using standard rules for logarithmic calculus, this can be written as
+\begin{equation}
+	\log\left(P_\lambda(k)\right) = k\log{\lambda} - k - \sum_k \log{k}.
+\end{equation}
+Important to note here is the limit of the sum. For $k\in[0,1]$, this sum should equal 1. As such, we can write the sum as the following set of cases:
+\begin{equation}
+	\sum_k \log{k} = \begin{cases}
+				1 & 0 \leq k < 2\\
+				\sum_{i=2}^k \log{i} & k \geq 2
+			 \end{cases}.
+\end{equation}
+The above explanation is numerically implemented and tested \texttt{01\_poisson\_distribution.py}:
+
+\lstinputlisting[language=Python]{../01\_poisson\_distribution.py}

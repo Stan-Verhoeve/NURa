@@ -1,0 +1,25 @@
+\documentclass[hidelinks,a4paper,11pt]{article}
+
+\input{packages.tex}
+\input{my_defines.tex}
+\input{listing_setup.tex}
+\graphicspath{../figures}
+
+\geometry{a4paper, portrait, margin=2cm}
+
+\begin{document}
+\begin{wrapfigure}[5]{l}{0.11\textwidth}
+	\includegraphics[]{UL.png}
+\end{wrapfigure}
+\noindent
+\Large\textbf{Hand-in 1} \hspace*{\fill} \normalsize\textbf{Stan Verhoeve}\\
+\textit{Subject:} Numerical Recipes A \hspace*{\fill}s2476894\\
+\textit{Lecturer:} Dr. Marcel van Daalen\\
+\textit{Date:} \today
+
+\vspace*{15mm}
+\noindent
+\input{01_poisson.tex}
+\input{02_vandermonde.tex}
+
+\end{document}
