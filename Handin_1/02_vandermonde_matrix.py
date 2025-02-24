@@ -128,7 +128,7 @@ def polynomial(coefs, x):
 
     
 def main():
-    from helper_scripts.interpolator import interpolator
+    from helper_scripts.interpolation import interpolator
     from helper_scripts.pretty_printing import pretty_print_array
     import matplotlib.pyplot as plt
     
