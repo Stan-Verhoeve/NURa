@@ -9,4 +9,4 @@ These are my solutions to hand-in 1 for the NURa course. I have organized my cod
 
 
 ### Usage
-The `run.sh` file runs all python scripts, prints their output to terminal, and builds the `.pdf` file which has additional explanation for each (sub)question.
+The `run.sh` file runs all python scripts, prints their output to terminal, and builds the `.pdf` file which has additional explanation for each (sub)question. The `.pdf` file can be found in [latex/OUT](latex/OUT). Note that [latex/OUT](latex/OUT) will only be created AFTER executing `run.sh`.
