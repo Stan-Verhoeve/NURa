@@ -22,6 +22,17 @@ else
 	rm -rf figures/*
 fi
 
+# Check if folder for txt exists
+if [[ ! -d "OUT" ]]; then
+	# If not, create it
+	echo "Creating 'OUT' directory..."
+	mkdir OUT
+else
+	# If so, clear it
+	echo "'OUT' directory already exists. Now clearing..."
+	rm -rf OUT/*
+fi
+
 # Do we have command line arguments?
 if [[ -n "$1" ]]; then
 	script="$1"
@@ -42,11 +53,14 @@ else
 		# Fancy printing
 		printcmd="Now running $script"
 		varlength=${#printcmd}
+		
+		# txt to write output to
+		outfile="OUT/${script%.py}.txt"
 
 		printf '%*s\n' "$varlength" '' | tr ' ' '-'
 		echo $printcmd
 		echo
-		python3 $script
+		python3 $script > $outfile
 	done
 fi
 
