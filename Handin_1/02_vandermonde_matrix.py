@@ -1,5 +1,6 @@
 import numpy as np
 
+# TODO: make class for matrix??
 def to_lu(matrix: np.ndarray) -> np.ndarray:
     # TODO:
     # Decomposes in U,V (returns U,V). Better
@@ -13,33 +14,45 @@ def to_lu(matrix: np.ndarray) -> np.ndarray:
     matrix = np.array(matrix, dtype=np.float64)
     
     # In-place matrix
-    new_matrix = np.zeros_like(matrix)    
+    inplace_matrix = matrix.copy()
     N = len(matrix)
     
-    # Identity and zero matrix
-    # TODO: remove once in-place is implemented
-    L = np.eye(N, dtype=np.float64)
-    U = np.zeros_like(matrix)
+    # Indexing array (keeps track of permutations of row swaps)
+    permutation = np.arange(N)
     
+    # Implicit pivot; largest coef on each row
+    largest_coef = np.max(np.abs(matrix), axis=-1)
+    if np.any(largest_coef == 0):
+        raise ValueError("Matrix is singular")
+
+    largest_coef_inv = largest_coef ** (-1)
+
     # Loop over columns
-    for j in range(N):
-        for i in range(j+1):
-            # sum(L[i,k] * U[k,j]) is simply the dot product between L_ik and U_kj
-            # Since k goes from 0 to i-1, this is L[i, :i]
-            U[i, j] = matrix[i, j] - np.dot(L[i, :i], U[:i, j])
-            new_matrix[i,j] = matrix[i, j] - np.dot(L[i, :i], U[:i, j])
-
-        for i in range(j+1, N):
-            # sum(L[i,k] * U[k,j]) is simply the dot product between L_ik and U_kj
-            # Since k goes form 0 to j-1, this is L[i, :j]
-            L[i, j] = matrix[i, j] - np.dot(L[i, :j], U[:j, j])
-            new_matrix[i,j] = matrix[i, j] - np.dot(L[i, :j], U[:j, j])
+    for k in range(N):
+        # Find index of largest pivot candidate
+        imax = k + np.argmax(np.abs(matrix[k:,k] * largest_coef_inv[permutation][k:]))
         
-        # Division by beta_jj
-        L[j+1:,j] /= U[j,j]
-        new_matrix[j+1:,j] /= U[j,j]
+        # If not on the diagonal, swap rows
+        if imax != k:
+            # swap rows
+            inplace_matrix[[imax, k], :] = inplace_matrix[[k, imax], :]
+            # Track permutation
+            permutation[k], permutation[imax] = permutation[imax], permutation[k]
+        
+        for i in range(k+1, N):
+            inplace_matrix[i, k] /= inplace_matrix[k, k]
+            # Loop over j is identical to dot product
+            inplace_matrix[i, k+1:] -= np.dot(inplace_matrix[i, k], inplace_matrix[k, k+1:])
 
-    return L, U, new_matrix
+    # idx_array essentially stores the permutation destinations (i.e. idx0 should go to the
+    # idx stored in the array, etc). For numpy indexing, however, we want the inverse permutation
+    # that has in idx0 the row that should go to 0, not that comes from 0. As such, invert the
+    # permutation
+    inv_permutation = np.empty_like(permutation)
+    inv_permutation[permutation] = np.arange(N)
+
+
+    return inplace_matrix, inv_permutation
 
 # TODO: make single function?
 def forward_substition(L, y):
@@ -68,24 +81,10 @@ def polynomial(coefs, x):
 
     return y
 
-# TODO: move to helper script?
-def pretty_print_array(array, formatter=".2e", ncols=4):
-    N = len(np.asarray(array).flatten())
-    nrows = int(np.ceil(N / ncols))
-
-    padded = np.pad(array, (0, nrows * ncols - N), constant_values = np.nan)
-    padded = padded.reshape(nrows,ncols)
-
-    format_func = lambda x: f"{x:{formatter}}" if not np.isnan(x) else "     "
-
-    print(np.array2string(padded, formatter={"float_kind":format_func}, separator="   "))
-
-    return
-
-
     
 def main():
     from helper_scripts.interpolator import interpolator
+    from helper_scripts.pretty_printing import pretty_print_array
     import matplotlib.pyplot as plt
     
     # Get x, y data
@@ -94,17 +93,20 @@ def main():
     # Construct Vandermonde matrix
     V = x[:,None] ** np.arange(len(x))
     
-    L, U, B = to_lu(V)
+    LU, permutation = to_lu(V)
+    U = np.triu(LU)
+    L = np.tril(LU, k=-1) + np.eye(*LU.shape)
     
     # Sanity check
+    reconstruction = (L@U)[permutation, :]
     print("Sanity check")
-    print(f"LU = V: {np.all(np.isclose(V, L@U))}\n")
+    print(f"LU = V: {np.all(np.isclose(V, reconstruction))}\n")
 
     # TODO: clean up code
     # TODO: do I want classes / more functions?
 
     # Intermediate solution vector
-    z = forward_substition(L, y)
+    z = forward_substition(L, y[permutation])
 
     # Coefficient vector
     c = backward_substition(U, z)
@@ -114,7 +116,8 @@ def main():
     pretty_print_array(c, ncols=4)
     
 
-    # TODO: Make this cleaner
+    # TODO: Clean this up?
+    # TODO: Also do for 1 iteration
     # Improve using iterative approach
     c_iter = c.copy()
     Niters = 10
@@ -122,7 +125,7 @@ def main():
         dy = V @ c_iter - y
 
         # Intermediate
-        z = forward_substition(L, dy)
+        z = forward_substition(L, dy[permutation])
         # Error in c
         dc = backward_substition(U, z)
         # Subtract to minimise
@@ -136,6 +139,7 @@ def main():
     
     # Interpolate using Neville
     neville_y = ipl.interpolate(interp_x, kind="neville")
+
     # Get polynomial using Vandermonde coefficients
     LU_y = polynomial(c, interp_x)
     LU_y_iter = polynomial(c_iter, interp_x)
@@ -145,7 +149,8 @@ def main():
     abs_diff_LU = abs(y - polynomial(c, x))
     abs_diff_LU_iter = abs(y - polynomial(c_iter, x))
 
-    # TODO: find nicer colours / linestyles
+    # TODO: Create figure for each subquestion (a), (b), (c)?
+    # TODO: Write function to plot for me?
     # Create figure
     aspect = 2
     fig, (ax1, ax2) = plt.subplots(2,1, 
@@ -154,18 +159,19 @@ def main():
                                    sharex=True,
                                    constrained_layout=True,
                                    dpi=300)  
-    # Create figure
+    
+    ax1.set_ylim(-400, 400)
     ax1.set_ylabel("y")
     ax1.scatter(x,y, label="Nodes")
-    ax1.plot(interp_x, neville_y, c="k", label="Neville")
-    ax1.plot(interp_x, LU_y, c="b", ls="--", label="LU decomposition")
-    ax1.plot(interp_x, LU_y_iter, c="orange", ls="-.", label=f"LU, {Niters} iterations")
+    ax1.plot(interp_x, neville_y, c="green", ls="--", label="Neville")
+    ax1.plot(interp_x, LU_y, c="orange", label="LU decomposition")
+    ax1.plot(interp_x, LU_y_iter, c="purple", ls="-.", label=f"LU, {Niters} iterations")
     
     ax2.set_xlabel("x")
     ax2.set_ylabel("|$y_i - y$|")
-    ax2.plot(x, abs_diff_neville, c="k")
-    ax2.plot(x, abs_diff_LU, c="b")
-    ax2.plot(x, abs_diff_LU_iter, c="orange")
+    ax2.plot(x, abs_diff_neville, c="green", ls="--")
+    ax2.plot(x, abs_diff_LU, c="orange")
+    ax2.plot(x, abs_diff_LU_iter, c="purple")
     ax2.set_yscale("log")
 
     ax1.legend()
