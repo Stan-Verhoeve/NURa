@@ -1,2 +1,4 @@
 OUT/
+__pycache__/
+figures/
 *.txt
