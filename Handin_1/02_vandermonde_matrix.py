@@ -1,58 +1,103 @@
 import numpy as np
+import copy
 
-# TODO: make class for matrix??
-def to_lu(matrix: np.ndarray) -> np.ndarray:
-    # TODO:
-    # Decomposes in U,V (returns U,V). Better
-    # to overwrite in-place. To do later
+class LU_decomposition:
+    def __init__(self, matrix: np.ndarray) -> None:
+        """
+        Class to perform LU decomposition with partial
+        (implicit) pivoting
 
-    # Check if matrix is square
-    if len(set(np.shape(matrix))) > 1:
-        raise ValueError("Matrix should be square for this algorithm")
-    
-    # Explicitly cast to float64 ndarray
-    matrix = np.array(matrix, dtype=np.float64)
-    
-    # In-place matrix
-    inplace_matrix = matrix.copy()
-    N = len(matrix)
-    
-    # Indexing array (keeps track of permutations of row swaps)
-    permutation = np.arange(N)
-    
-    # Implicit pivot; largest coef on each row
-    largest_coef = np.max(np.abs(matrix), axis=-1)
-    if np.any(largest_coef == 0):
-        raise ValueError("Matrix is singular")
+        Parameters
+        ----------
+        matrix : ndarray
+            matrix to perform LU decomposition on
+        """
+        # Explicitly cast to float63 ndarray
+        self.matrix = np.array(matrix, dtype=np.float64)
+        self.LU = copy.deepcopy(self.matrix)
 
-    largest_coef_inv = largest_coef ** (-1)
+        # Confirm matrix is square
+        if not LU_decomposition.__is_square(self.LU):
+            raise ValueError("Matrix should be square")
 
-    # Loop over columns
-    for k in range(N):
-        # Find index of largest pivot candidate
-        imax = k + np.argmax(np.abs(matrix[k:,k] * largest_coef_inv[permutation][k:]))
+        self.permutation = np.arange(len(self.LU))
+        # self.permutation = np.zeros(len(self.LU), dtype=np.int32)
+        self._decompose()
+
+    def _decompose(self):
+        """
+        Performs LU decomposition in-place
+        """
+        largest_coef = np.max(np.abs(self.LU), axis=1)
+        if not all(largest_coef > 0):
+            raise ValueError("Matrix is singular")
+        largest_coef_inv = largest_coef ** (-1)
+        N = len(self.LU)
         
-        # If not on the diagonal, swap rows
-        if imax != k:
-            # swap rows
-            inplace_matrix[[imax, k], :] = inplace_matrix[[k, imax], :]
-            # Track permutation
-            permutation[k], permutation[imax] = permutation[imax], permutation[k]
+        # Iterate over columns
+        for k in range(N):
+            # Index of largest pivot
+            imax = k + np.argmax(np.abs(self.matrix[k:, k] * largest_coef_inv[k:]))
+            
+            # Swap rows if imax not on diagonal
+            if imax != k:
+                self.LU[[imax, k], :] = self.LU[[k, imax], :]
+                self.permutation[k], self.permutation[imax] = self.permutation[imax], self.permutation[k]
+                largest_coef_inv[k], largest_coef_inv[imax] = largest_coef_inv[imax], largest_coef_inv[k]
+
+            for i in range(k+1, N):
+                self.LU[i, k] /= self.LU[k,k]
+                self.LU[i, k+1:] -= np.dot(self.LU[i, k], self.LU[k, k+1:])
         
-        for i in range(k+1, N):
-            inplace_matrix[i, k] /= inplace_matrix[k, k]
-            # Loop over j is identical to dot product
-            inplace_matrix[i, k+1:] -= np.dot(inplace_matrix[i, k], inplace_matrix[k, k+1:])
+        # idx_array stores the permutation destinations. For numpy indexing, however, we 
+        # want the inverse permutation that has in idx0 the row that should go to 0, not 
+        # the one that comes from zero. As such, invert the permutation
+        self.inv_permutation = np.empty_like(self.permutation)
+        self.inv_permutation[self.permutation] = np.arange(N)
+    
+    def get_LU(self, separate=False):
+        """
+        Returns the decomposition, along with
+        the permutation vector
 
-    # idx_array essentially stores the permutation destinations (i.e. idx0 should go to the
-    # idx stored in the array, etc). For numpy indexing, however, we want the inverse permutation
-    # that has in idx0 the row that should go to 0, not that comes from 0. As such, invert the
-    # permutation
-    inv_permutation = np.empty_like(permutation)
-    inv_permutation[permutation] = np.arange(N)
+        Parameters
+        ----------
+        separate : bool
+            Separate LU into L and U.
+            The default is false
 
+        Returns
+        -------
+        tuple
+            (LU, permutation) if separate=False
+            (L, U, permutation) if separate=True
+        """
+        if separate:
+            L = np.tril(self.LU, k=-1) + np.eye(len(self.LU))
+            U = np.triu(self.LU)
+            return (L, U, self.inv_permutation)
+        return (self.LU, self.inv_permutation)
 
-    return inplace_matrix, inv_permutation
+    @staticmethod
+    def __is_square(matrix: np.ndarray) -> bool:
+        """
+        Checks if a given matrix is square
+
+        Parameters
+        ----------
+        matrix : np.ndarray
+            Matrix to check
+            
+        Returns
+        -------
+        bool
+            Whether matrix is square
+        """
+
+        # Convert shape to set (i.e. get unique elements)
+        # If square, there is 1 unique element in the set
+        return len(set(np.shape(matrix))) == 1
+            
 
 # TODO: make single function?
 def forward_substition(L, y):
@@ -93,15 +138,16 @@ def main():
     # Construct Vandermonde matrix
     V = x[:,None] ** np.arange(len(x))
     
-    LU, permutation = to_lu(V)
-    U = np.triu(LU)
-    L = np.tril(LU, k=-1) + np.eye(*LU.shape)
-    
+    decomposition = LU_decomposition(V)
+    L, U, permutation = decomposition.get_LU(separate=True)
+
     # Sanity check
     reconstruction = (L@U)[permutation, :]
+
     print("Sanity check")
     print(f"LU = V: {np.all(np.isclose(V, reconstruction))}\n")
-
+    
+    # exit()
     # TODO: clean up code
     # TODO: do I want classes / more functions?
 
@@ -123,9 +169,9 @@ def main():
     Niters = 10
     for __ in range(Niters):
         dy = V @ c_iter - y
-
+        
         # Intermediate
-        z = forward_substition(L, dy[permutation])
+        z = forward_substition(L, dy)
         # Error in c
         dc = backward_substition(U, z)
         # Subtract to minimise
