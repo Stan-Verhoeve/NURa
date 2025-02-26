@@ -56,9 +56,9 @@ class LU_decomposition:
                 self.LU[i, k] /= self.LU[k, k]
                 self.LU[i, k + 1 :] -= np.dot(self.LU[i, k], self.LU[k, k + 1 :])
 
-        # idx_array stores the permutation destinations. For numpy indexing, 
-        # however, we want the inverse permutation that has in idx0 the row that 
-        # should go to 0, not the one that comes from zero. 
+        # idx_array stores the permutation destinations. For numpy indexing,
+        # however, we want the inverse permutation that has in idx0 the row that
+        # should go to 0, not the one that comes from zero.
         # As such, invert the permutation
         self.inv_permutation = np.empty_like(self.permutation)
         self.inv_permutation[self.permutation] = np.arange(N)
@@ -256,7 +256,6 @@ def main():
     ax2.set_xlabel("x")
     ax2.set_ylabel("|$y_i - y$|")
     ax2.set_yscale("log")
-    
 
     # Q2a
     ax1.scatter(x, y, label="Nodes")
@@ -264,7 +263,7 @@ def main():
     ax2.plot(x, abs_diff_LU, c="orange")
     ax1.legend()
     plt.savefig("figures/02_vandemonde_Q2a.png", bbox_inches="tight", dpi=300)
-    
+
     # Q2b
     ax1.plot(interp_x, neville_y, c="green", ls="--", label="Neville")
     ax2.plot(x, abs_diff_neville, c="green", ls="--")
