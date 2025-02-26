@@ -262,7 +262,7 @@ def main():
     ax1.plot(interp_x, LU_y, c="orange", label="LU decomposition")
     ax2.plot(x, abs_diff_LU, c="orange")
     ax1.legend()
-    plt.savefig("figures/02_vandemonde_Q2a.png", bbox_inches="tight", dpi=300)
+    plt.savefig("figures/02_vandermonde_Q2a.png", bbox_inches="tight", dpi=300)
 
     # Q2b
     ax1.plot(interp_x, neville_y, c="green", ls="--", label="Neville")
