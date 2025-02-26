@@ -40,13 +40,16 @@ if [[ -n "$1" ]]; then
 	# Fancy printing
 	printcmd="Now running $script"
 	varlength=${#printcmd}
-
+	
 	printf '%*s\n' "$varlength" '' | tr ' ' '-'
 	echo $printcmd
 	echo
 
 	# Run script provided in command line
 	python3 $script
+
+	# Exit
+	exit 0
 else
 	# Run all .py scripts in directory
 	for script in *.py; do
