@@ -147,13 +147,14 @@ class interpolator:
         y_interp = np.zeros_like(x)
         
         # Grab correct interpolation function
-        match kind:
-            case "linear":
-                interp_func = self._linear_interpolator
-            case "cubic":
-                interp_func = lambda x: self._neville_interpolator(x, order=3)
-            case "neville":
-                interp_func = lambda x: self._neville_interpolator(x)
+        if kind == "linear":
+            interp_func = self.__linear_interpolator
+        elif kind == "cubic":
+            interp_func = lambda x: self._neville_interpolator(x, order=3)
+        elif kind == "neville":
+            interp_func = lambda x: self._neville_interpolator(x)
+        else:
+            raise ValueError(f"Unknown interpolation kind: '{kind}'")
         
         # Iterate over points to interpolate
         for i, xi in enumerate(x):
