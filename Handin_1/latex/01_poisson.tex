@@ -11,10 +11,11 @@ Using standard rules for logarithmic calculus, this can be written as
 \begin{equation}
 	\log\left(P_\lambda(k)\right) = k\log{\lambda} - k - \sum_k \log{k}.
 \end{equation}
-The above explanation is numerically implemented and tested \texttt{01poisson.py}:
-
-\lstinputlisting[style=pystyle,language=Python]{../01poisson.py}
-
-Output of the code is given in \texttt{OUT/01poisson.txt}:
-
+Special care has to be taken when $k=0$, for which de sum would be undefined. In the case that $k=0$, the sum should instead be set to $0$. In code, we automatically realise this by summing from $i=2$ to $k$:
+\lstinputlisting[style=pystyle,language=Python,firstline=35,lastline=36]{../01poisson.py}
+For $k<i$, \verb|range| returns an iterable of length $0$ (i.e. it does not iterate).\\
+\\
+The full code can be found in \cref{lst:poissonFullCode}, which has the following output (available in \texttt{OUT/01poisson.txt}):
 \lstinputlisting[style=txtstyle]{../OUT/01poisson.txt}
+
+\lstinputlisting[style=pystyle,language=Python,caption={Full code for question 1},label={lst:poissonFullCode}]{../01poisson.py}
