@@ -166,7 +166,7 @@ def solve_system(M: list | np.ndarray, y: list | np.ndarray, Niters: int =None) 
 
 def main():
     from helper_scripts.interpolation import interpolator
-    from helper_scripts.pretty_printing import pretty_print_array
+    from helper_scripts.pretty_printing import pretty_print_array, pretty_print_timeit
     import matplotlib.pyplot as plt
     import timeit
     
@@ -187,7 +187,10 @@ def main():
     print("Sanity check")
     print(f"LU = V: {np.all(np.isclose(V, reconstruction))}\n")
     
-    # Solve coefficients
+    ##########################
+    ## Solving coefficients ##
+    ##########################
+    
     coefs = solve_system(V, y)
     print("Polynomial coefficients:")
     pretty_print_array(coefs, ncols=4)
@@ -196,6 +199,9 @@ def main():
     coefs_iter1 = solve_system(V, y, Niters=1)
     coefs_iter10 = solve_system(V, y, Niters=10)
     
+    ###############################################
+    ## Interpolation and polynomial construction ##
+    ###############################################
     # Create interpolator object
     ipl = interpolator(x, y)
 
@@ -216,8 +222,9 @@ def main():
     abs_diff_LU_iter1 = abs(y - polynomial(coefs_iter1, x))
     abs_diff_LU_iter10 = abs(y - polynomial(coefs_iter10, x))
 
-    # TODO: Create figure for each subquestion (a), (b), (c)?
-    # Create figure
+    ##############
+    ## Plotting ##
+    ##############
     aspect = 2
     fig, (ax1, ax2) = plt.subplots(2,1, 
                                    gridspec_kw={"height_ratios":[aspect, 1]}, 
@@ -246,7 +253,26 @@ def main():
     
     plt.savefig("figures/02_vandermonde.png", bbox_inches="tight", dpi=300)
     
-    # TODO: use timeit to time different approaches
+    ##############
+    ##  Timeit  ##
+    ##############
+    number = 10
+    time_neville = timeit.timeit(lambda: ipl.interpolate(interp_x, kind="neville"), number=number)
+    time_LU = timeit.timeit(lambda: solve_system(V, y), number=number)
+    time_LU_iter1 = timeit.timeit(lambda: solve_system(V, y, Niters=1), number=number)
+    time_LU_iter10 = timeit.timeit(lambda: solve_system(V, y, Niters=10), number=number)
+    
+    print("\nNeville interpolation:")
+    pretty_print_timeit(time_neville, number)
+
+    print("\nLU decomposition: (no iterations)")
+    pretty_print_timeit(time_LU, number)
+
+    print("\nLU decomposition (1 iteration)")
+    pretty_print_timeit(time_LU_iter1, number)
+
+    print("\nLU decomposition (10 iterations)")
+    pretty_print_timeit(time_LU_iter10, number)
 
 if __name__ in ("__main__"):
     main()
