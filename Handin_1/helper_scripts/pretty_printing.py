@@ -1,4 +1,14 @@
-from numpy import asarray, ndarray, array2string, pad, nan, shape, float64, isnan, ceil
+from numpy import (
+    asarray,
+    ndarray,
+    array2string,
+    pad,
+    nan,
+    shape,
+    float64,
+    isnan,
+    ceil,
+)
 
 
 def pretty_print_array(
@@ -39,7 +49,9 @@ def pretty_print_array(
     format_func = lambda x: f"{x:{formatter}}" if not isnan(x) else "     "
 
     # Print array
-    print(array2string(padded, formatter={"float_kind": format_func}, separator="   "))
+    print(
+        array2string(padded, formatter={"float_kind": format_func}, separator="   ")
+    )
 
     return
 

@@ -56,9 +56,10 @@ class LU_decomposition:
                 self.LU[i, k] /= self.LU[k, k]
                 self.LU[i, k + 1 :] -= np.dot(self.LU[i, k], self.LU[k, k + 1 :])
 
-        # idx_array stores the permutation destinations. For numpy indexing, however, we
-        # want the inverse permutation that has in idx0 the row that should go to 0, not
-        # the one that comes from zero. As such, invert the permutation
+        # idx_array stores the permutation destinations. For numpy indexing, 
+        # however, we want the inverse permutation that has in idx0 the row that 
+        # should go to 0, not the one that comes from zero. 
+        # As such, invert the permutation
         self.inv_permutation = np.empty_like(self.permutation)
         self.inv_permutation[self.permutation] = np.arange(N)
 
@@ -177,7 +178,10 @@ def solve_system(M: np.ndarray, y: np.ndarray, Niters: int = None) -> np.ndarray
 
 def main():
     from helper_scripts.interpolation import interpolator
-    from helper_scripts.pretty_printing import pretty_print_array, pretty_print_timeit
+    from helper_scripts.pretty_printing import (
+        pretty_print_array,
+        pretty_print_timeit,
+    )
     import matplotlib.pyplot as plt
     import timeit
 
@@ -275,8 +279,12 @@ def main():
         lambda: ipl.interpolate(interp_x, kind="neville"), number=number
     )
     time_LU = timeit.timeit(lambda: solve_system(V, y), number=number)
-    time_LU_iter1 = timeit.timeit(lambda: solve_system(V, y, Niters=1), number=number)
-    time_LU_iter10 = timeit.timeit(lambda: solve_system(V, y, Niters=10), number=number)
+    time_LU_iter1 = timeit.timeit(
+        lambda: solve_system(V, y, Niters=1), number=number
+    )
+    time_LU_iter10 = timeit.timeit(
+        lambda: solve_system(V, y, Niters=10), number=number
+    )
 
     print("\nNeville interpolation:")
     pretty_print_timeit(time_neville, number)
