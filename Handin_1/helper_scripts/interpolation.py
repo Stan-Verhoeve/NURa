@@ -1,7 +1,7 @@
 import numpy as np
 
 class interpolator:
-    def __init__(self, x_values: list | np.ndarray, y_values: list | np.ndarray) -> None:
+    def __init__(self, x_values: np.ndarray, y_values: np.ndarray) -> None:
         """
         Initialize with known x- and y-values
 
@@ -85,7 +85,7 @@ class interpolator:
 
         return P[0]
 
-    def _linear_interpolator(self, x: list | np.ndarray) -> float:
+    def _linear_interpolator(self, x: np.ndarray) -> float:
         """
         Linear interpolator
 
@@ -122,7 +122,7 @@ class interpolator:
 
         
 
-    def interpolate(self, x: list | np.ndarray, kind: str = "linear") -> np.ndarray:
+    def interpolate(self, x: np.ndarray, kind: str = "linear") -> np.ndarray:
         """
         Interpolate on the values `x`
 
@@ -163,7 +163,7 @@ class interpolator:
 
 
     @staticmethod
-    def __strictly_monotonic(array: list | np.ndarray) -> bool:
+    def __strictly_monotonic(array: np.ndarray) -> bool:
         """
         Check if an array is strictly monotonic
 
@@ -182,7 +182,7 @@ class interpolator:
 
         return strictly_increasing | strictly_decreasing
 
-    def __bounded(self, x: list | np.ndarray) -> bool:
+    def __bounded(self, x: np.ndarray) -> bool:
         """
         Check if a value is bounded to the domain of `x_values`
 
@@ -199,7 +199,7 @@ class interpolator:
         return all(x >= min(self.x_values)) & all(x <= max(self.x_values))
 
     @staticmethod
-    def bisection(a, array: list | np.ndarray) -> int:
+    def bisection(a, array: np.ndarray) -> int:
         """
         Use bisection algorithm to find where in array `a` should
         be. If `a` is in `array`, will return that index

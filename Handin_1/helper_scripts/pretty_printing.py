@@ -1,6 +1,6 @@
 from numpy import asarray, ndarray, array2string, pad, nan, shape, float64, isnan, ceil
 
-def pretty_print_array(array: list | ndarray, formatter: str =".2e", ncols: int=None) -> None:
+def pretty_print_array(array: ndarray, formatter: str =".2e", ncols: int=None) -> None:
     """
     Prints a list or array with some formatting options.
 

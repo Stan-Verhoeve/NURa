@@ -122,7 +122,7 @@ def polynomial(coefs, x):
 
     return y
 
-def solve_system(M: list | np.ndarray, y: list | np.ndarray, Niters: int =None) -> np.ndarray:
+def solve_system(M: np.ndarray, y: np.ndarray, Niters: int =None) -> np.ndarray:
     """
     Solve the matrix system Mx=y.
 
