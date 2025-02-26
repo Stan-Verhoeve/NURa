@@ -253,23 +253,32 @@ def main():
 
     ax1.set_ylim(-400, 400)
     ax1.set_ylabel("y")
-    ax1.scatter(x, y, label="Nodes")
-    ax1.plot(interp_x, neville_y, c="green", ls="--", label="Neville")
-    ax1.plot(interp_x, LU_y, c="orange", label="LU decomposition")
-    ax1.plot(interp_x, LU_y_iter1, c="red", ls="dotted", label=f"LU, 1 iterations")
-    ax1.plot(interp_x, LU_y_iter10, c="purple", ls="-.", label=f"LU, 10 iterations")
-
     ax2.set_xlabel("x")
     ax2.set_ylabel("|$y_i - y$|")
-    ax2.plot(x, abs_diff_neville, c="green", ls="--")
+    ax2.set_yscale("log")
+    
+
+    # Q2a
+    ax1.scatter(x, y, label="Nodes")
+    ax1.plot(interp_x, LU_y, c="orange", label="LU decomposition")
     ax2.plot(x, abs_diff_LU, c="orange")
+    ax1.legend()
+    plt.savefig("figures/02_vandemonde_Q2a.png", bbox_inches="tight", dpi=300)
+    
+    # Q2b
+    ax1.plot(interp_x, neville_y, c="green", ls="--", label="Neville")
+    ax2.plot(x, abs_diff_neville, c="green", ls="--")
+    ax1.legend()
+    plt.savefig("figures/02_vandermonde_Q2b.png", bbox_inches="tight", dpi=300)
+
+    # Q2c
+    ax1.plot(interp_x, LU_y_iter1, c="red", ls="dotted", label=f"LU, 1 iterations")
+    ax1.plot(interp_x, LU_y_iter10, c="purple", ls="-.", label=f"LU, 10 iterations")
+    ax1.legend()
     ax2.plot(x, abs_diff_LU_iter1, c="red", ls="dotted")
     ax2.plot(x, abs_diff_LU_iter10, c="purple", ls="-.")
-    ax2.set_yscale("log")
 
-    ax1.legend()
-
-    plt.savefig("figures/02_vandermonde.png", bbox_inches="tight", dpi=300)
+    plt.savefig("figures/02_vandermonde_Q2c.png", bbox_inches="tight", dpi=300)
 
     ##############
     ##  Timeit  ##
