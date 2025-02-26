@@ -99,8 +99,7 @@ class LU_decomposition:
         return len(set(np.shape(matrix))) == 1
             
 
-# TODO: make single function?
-def forward_substition(L, y):
+def forward_substitution(L, y):
     N = len(y)
     z = np.zeros(N)
 
@@ -108,8 +107,7 @@ def forward_substition(L, y):
         z[i] = y[i] - np.dot(L[i, :i], z[:i])
     return z
 
-# TODO: make single function?
-def backward_substition(U, y):
+def backward_substitution(U, y):
     N = len(y)
     z = np.zeros(N)
 
@@ -117,8 +115,6 @@ def backward_substition(U, y):
         z[i] = (y[i] - np.dot(U[i, i:], z[i:])) / U[i,i]
     return z
 
-
-# TODO: move to helper script?
 def polynomial(coefs, x):
     y = 0.
     for power,c in enumerate(coefs):
@@ -126,11 +122,53 @@ def polynomial(coefs, x):
 
     return y
 
+def solve_system(M: list | np.ndarray, y: list | np.ndarray, Niters: int =None) -> np.ndarray:
+    """
+    Solve the matrix system Mx=y.
+
+    Parameters
+    ----------
+    M : list | ndarray
+        Matrix of the system of equations
+    y : list | ndarray
+        Solution vector
+    Niters : int, optional
+        Number of iterations for iterative improvement.
+        If none, does not use iterative improvement.
+        The default is None
+
+    Returns
+    -------
+    x : ndarray
+        Solution to the system Mx=y
+    """
+    # LU decomposition
+    decomposition = LU_decomposition(M)
+    L, U, permutation = decomposition.get_LU(separate=True)
     
+    # Intermediate solution vector
+    z = forward_substitution(L, y[permutation])
+    # Solution
+    x = backward_substitution(U, z)
+    
+    if Niters:
+        for _ in range(Niters):
+            dy = M @ x - y
+
+            # Intermediate solution
+            z = forward_substitution(L, dy)
+            # Error in c
+            dx = backward_substitution(U, z)
+            # Subtract to minimise
+            x -= dx
+
+    return x
+
 def main():
     from helper_scripts.interpolation import interpolator
     from helper_scripts.pretty_printing import pretty_print_array
     import matplotlib.pyplot as plt
+    import timeit
     
     # Get x, y data
     x,y = np.genfromtxt("Vandermonde.txt").T
@@ -138,44 +176,25 @@ def main():
     # Construct Vandermonde matrix
     V = x[:,None] ** np.arange(len(x))
     
+    # LU decomposition
     decomposition = LU_decomposition(V)
     L, U, permutation = decomposition.get_LU(separate=True)
 
     # Sanity check
+    # Include permutation to undo the row swaps
     reconstruction = (L@U)[permutation, :]
 
     print("Sanity check")
     print(f"LU = V: {np.all(np.isclose(V, reconstruction))}\n")
     
-    # exit()
-    # TODO: clean up code
-    # TODO: do I want classes / more functions?
-
-    # Intermediate solution vector
-    z = forward_substition(L, y[permutation])
-
-    # Coefficient vector
-    c = backward_substition(U, z)
-
-    # Pretty print coefficients
+    # Solve coefficients
+    coefs = solve_system(V, y)
     print("Polynomial coefficients:")
-    pretty_print_array(c, ncols=4)
-    
+    pretty_print_array(coefs, ncols=4)
 
-    # TODO: Clean this up?
-    # TODO: Also do for 1 iteration
-    # Improve using iterative approach
-    c_iter = c.copy()
-    Niters = 10
-    for __ in range(Niters):
-        dy = V @ c_iter - y
-        
-        # Intermediate
-        z = forward_substition(L, dy)
-        # Error in c
-        dc = backward_substition(U, z)
-        # Subtract to minimise
-        c_iter -= dc
+    # Solve with iterative correction
+    coefs_iter1 = solve_system(V, y, Niters=1)
+    coefs_iter10 = solve_system(V, y, Niters=10)
     
     # Create interpolator object
     ipl = interpolator(x, y)
@@ -187,16 +206,17 @@ def main():
     neville_y = ipl.interpolate(interp_x, kind="neville")
 
     # Get polynomial using Vandermonde coefficients
-    LU_y = polynomial(c, interp_x)
-    LU_y_iter = polynomial(c_iter, interp_x)
+    LU_y = polynomial(coefs, interp_x)
+    LU_y_iter1 = polynomial(coefs_iter1, interp_x)
+    LU_y_iter10 = polynomial(coefs_iter10, interp_x)
     
     # Get absolute differences
     abs_diff_neville = abs(y - ipl.interpolate(x, kind="neville"))
-    abs_diff_LU = abs(y - polynomial(c, x))
-    abs_diff_LU_iter = abs(y - polynomial(c_iter, x))
+    abs_diff_LU = abs(y - polynomial(coefs, x))
+    abs_diff_LU_iter1 = abs(y - polynomial(coefs_iter1, x))
+    abs_diff_LU_iter10 = abs(y - polynomial(coefs_iter10, x))
 
     # TODO: Create figure for each subquestion (a), (b), (c)?
-    # TODO: Write function to plot for me?
     # Create figure
     aspect = 2
     fig, (ax1, ax2) = plt.subplots(2,1, 
@@ -211,13 +231,15 @@ def main():
     ax1.scatter(x,y, label="Nodes")
     ax1.plot(interp_x, neville_y, c="green", ls="--", label="Neville")
     ax1.plot(interp_x, LU_y, c="orange", label="LU decomposition")
-    ax1.plot(interp_x, LU_y_iter, c="purple", ls="-.", label=f"LU, {Niters} iterations")
+    ax1.plot(interp_x, LU_y_iter1, c="red", ls="dotted", label=f"LU, 1 iterations")
+    ax1.plot(interp_x, LU_y_iter10, c="purple", ls="-.", label=f"LU, 10 iterations")
     
     ax2.set_xlabel("x")
     ax2.set_ylabel("|$y_i - y$|")
     ax2.plot(x, abs_diff_neville, c="green", ls="--")
     ax2.plot(x, abs_diff_LU, c="orange")
-    ax2.plot(x, abs_diff_LU_iter, c="purple")
+    ax2.plot(x, abs_diff_LU_iter1, c="red", ls="dotted")
+    ax2.plot(x, abs_diff_LU_iter10, c="purple", ls="-.")
     ax2.set_yscale("log")
 
     ax1.legend()
