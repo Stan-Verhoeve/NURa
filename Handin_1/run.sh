@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# Make run.sh fail if a subcommand fails
-set -e
-set -o pipefail
-
 # For hand-in 1 only:
 # Check if 'Vandermonde.txt' exists
 if [[ ! -f "Vandermonde.txt" ]]; then
