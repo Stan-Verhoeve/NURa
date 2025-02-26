@@ -40,3 +40,36 @@ def pretty_print_array(array: list | ndarray, formatter: str =".2e", ncols: int=
 
     return
 
+def pretty_print_timeit(totaltime: float, number: int, formatter: str = ".2f", units: str = "ms") -> None:
+    """
+    Prints timeit timing in a neat manner
+
+    Parameters
+    ----------
+    totaltime : float
+        Total time in seconds that it took timeit.timeit to execute
+    number : int
+        Number of repeats in timeit.timeit
+    formatter : str, optional
+        Format to use in printing time information.
+        The default is ".2f"
+    units : str
+        units for time.
+        The default is "ms"
+    """
+    prefactor_mapper = {"ms":1e3, "s":1, "mus":1e6}
+    
+    if units not in prefactor_mapper:
+        raise ValueError("Invalid unit '{units}'. Use 'mus', 'ms', or 's'.")
+    
+    # Get mean runtime per iteration
+    meantime = totaltime / number
+    
+    # Get prefactor and correct for units
+    prefactor = prefactor_mapper[units]
+
+    totaltime *= prefactor
+    meantime *= prefactor
+
+    print(f"Total time: {totaltime:{formatter}} {units} ({number} runs)")
+    print(f"Average time per run: {meantime:{formatter}} {units}")
