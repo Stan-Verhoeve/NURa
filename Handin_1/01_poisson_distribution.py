@@ -16,6 +16,8 @@ def poisson(k: int32, lbd: float32) -> float32:
     logP: float32
         Natural log of P
     """
+    if k < 0:
+        raise ValueError("k should be non-negative")
     # TODO: Make vectorised?
 
     # Explicity convert k and lbd to 32bit
@@ -27,8 +29,12 @@ def poisson(k: int32, lbd: float32) -> float32:
     
     # With an eye to memory efficiency, as opposed to runtime speed,
     # use a for-loop to get the log of denominator
-    log_denom = float32(0.)
-
+    # Distinguish between cases k < 2 and k >= 2
+    if k < 2:
+        log_denom = float32(1.)
+    else:
+        log_denom = float32(0.)
+    
     for ks in range(2, k + 1):
         log_denom += float32(log(ks))
 
