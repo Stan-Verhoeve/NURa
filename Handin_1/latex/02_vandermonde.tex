@@ -1,17 +1,76 @@
 \section{Vandermonde matrix}
 \begin{enumerate}[label=(\alph*)]
-    \item Explanation of LU decomposition\\
-          Include code snippets and the like
-    \item Explanation of \texttt{polynomial}
-    \item Explanation of iterative approach
-    \item Explanation of timeit.
+    \item The Vandermonde matrix is constructed from the $x$-coordinates provided in \texttt{Vandermonde.txt} via $V_{ij} = x_i^j$, where the superscript denotes a \textit{power}, and not an index. As the array \verb|x| is one-dimensional, we broadcast its shape such that the number of columns matches \verb|len(x)|:
+\lstinputlisting[style=pystyle,language=Python,firstline=191,lastline=192]{../02vandermonde.py}
+For LU decomposition, the improved Crout algorithm with implicit pivoting is used. For ease of use, a class \verb|LU_decomposition| is created, which has methods for the decomposition, checking if the matrix is square, and for returning $L$, $U$, and the permutation of the improved Crout algorithm. Of note is that, where possible, array casting and the inner product (\verb|np.dot()|) is used instead of an explicit for-loop, see e.g.
+\lstinputlisting[style=pystyle,language=Python,firstline=55,lastline=57]{../02vandermonde.py}
+where, instead of looping over \verb|j > k|, a direct array slice \verb|[k + 1 :]| achieves the same.\\
+\\
+As a sanity check, we compare the the product $LU$ of our implementation to the original Vandermonde matrix $V$ using
+\lstinputlisting[style=pystyle,language=Python,firstline=198,lastline=203]{../02vandermonde.py}
+the output of which is (see also \texttt{OUT/02vandermonde.txt})
+\lstinputlisting[style=txtstyle,firstline=1,lastline=2]{../OUT/02vandermonde.txt}
+Solving for the coefficients $\bvec{c}$, once an LU-decomposition is achieved, is easily done through forward and backward substition, where we have
+\begin{align}
+    V\bvec{c} &= \bvec{y},\\
+    (LU)\bvec{c} &= \bvec{y},\\
+    L(U\bvec{c}) &= \bvec{y},\\
+    L\bvec{z} &= \bvec{y},
+\end{align}
+where we have introduced $\bvec{z} = U\bvec{c}$. Solving for $\bvec{c}$ thus amounts to first solving $L\bvec{z} = \bvec{y}$ using forward substitution (since $L$ is lower triangular), and then solving $U\bvec{c} = \bvec{z}$ using backward substitution (since $U$ is upper triangular). The forward- and backward substition algorithms can be found in listing \ref{lst:forwardbackward}
+\lstinputlisting[style=pystyle,language=Python,firstline=110,lastline=125,caption={Forward and backward substition algorithms.},label={lst:forwardbackward}]{../02vandermonde.py}
+Solving a general system $M\bvec{x} = \bvec{y}$, where $M$ can be decomposed in $L$ and $U$, is solved using
+\lstinputlisting[style=pystyle,language=Python,firstline=136,lastline=163,caption={Function that solves a matrix system $M\bvec{x} = \bvec{y}$, assuming $M$ can be decomposed into $L$ and $U$.}, label={lst:solvesystem}]{../02vandermonde.py}
+Our algorithm finds a solution for $\bvec{c}$ given by
+\lstinputlisting[style=txtstyle,firstline=4,lastline=9]{../OUT/02vandermonde.txt}
+
+\noindent
+With a solution for $\bvec{c}$, a polynomial on 1000 equally-spaced points is created using
+\lstinputlisting[style=pystyle,language=Python,firstline=128,lastline=133]{../02vandermonde.py}
+Plotting the polynomial, as well as the original nodes, yields figure \ref{fig:Q2a}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../figures/02_vandermonde_Q2a.png}
+    \caption{Polynomial found using LU decomposition of the Vandermonde matrix. Notice how the absolute difference with the initial points $y_i$ starts small, but grows for points at more positive $x$.}
+    \label{fig:Q2a}
+\end{figure}
+
+\item For the interpolation of the 19th degree polynomial, the helper script \texttt{helperscripts/interpolation.py} is used, which contains an interpolation class. This class is capable of linear interpolation, cubic interpolation using Neville's algorithm, and Lagrange interpolation, also using Neville's algorithm. The full interpolator class can be found in section \ref{sec:interpolation}, but for this question, only the Neville algorithm is important:
+\lstinputlisting[style=pystyle,language=Python,firstline=42,lastline=97]{../helperscripts/interpolation.py}.
+For any used class methods, see the full code in listing \ref{lst:interpolator}.\\
+\\
+Plotting also the Lagrange polynomial yield figure \ref{fig:Q2b}. Note that interpolation using Neville's differs significantly less from the original nodes than LU decomposition. We attribute this to the following:
+\begin{itemize}
+    \item The Vandermonde matrix is ill-conditioned, meaning that small deviations in the initial matrix lead to growing errors in the solution. As such, the LU decomposition is more prone to numerical instability, which is also echoed by the so-called condition number. For the Vandermonde matrix in this question, we find a condition number of order $10^30$, whereas generally a system is considered well-behaved when its condition number is of order 1. 
+\item The polynomial coefficients are calculated recursively using an intermediate solution vector, as well as forward- and backwards substitution. For a $20\times20$ matrix, as is the case for this question, this recursive solving means there are at least $40$ places where numerical error can be introduced and accumulated. As such, especially for solutions surrounding larger $x$ coordinates, the accumulated error becomes significant. This is also reflected in figure \ref{fig:Q2b}.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../figures/02_vandermonde_Q2b.png}
+	\caption{Polynomial found using Neville interpolation (green dashed) as well as using LU decomposition of the Vandermonde matrix (orange solid). Notice the Neville interpolation has a significantly smaller difference to the original node than LU decomposition. This is attributed to accumulated errors in finding the polynomial coefficients using the Vandermonde matrix.}
+    \label{fig:Q2b}
+\end{figure}
+
+\item For the iterative approach, listing \ref{lst:solvesystem} is expanded, resulting in
+\lstinputlisting[style=pystyle,language=Python,firstline=136,lastline=176]{../02vandermonde.py}
+Solving for 1 and 10 iterations yields figure \ref{fig:Q2c}, where no real improvement to the original LU decomposition can be seen.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../figures/02_vandermonde_Q2c.png}
+	\caption{Polynomial found using Neville interpolation (green dashed) as well as using LU decomposition of the Vandermonde matrix with no iterations (orange solid), one iteration (red dotted), and 10 iterations (purple dash-dotted). Notice the Neville interpolation has a significantly smaller difference to the original node than LU decomposition, and that the iterative approach does not yield better results.}
+    \label{fig:Q2c}
+\end{figure}
+
+
+\item Timing of the different approaches is achieved using
+\lstinputlisting[style=pystyle,language=Python,firstline=285, lastline=307]{../02vandermonde.py}
+the output of which is given by
+\lstinputlisting[style=txtstyle,firstline=11,lastline=25]{../OUT/02vandermonde.txt}
+It is clear that Neville interpolation is significantly (order 1000) slower than LU decomposition, and that there is almost no difference between no and one iteration for LU decomposition. A more significant differnce can be seen between no and 10 iterations.\\
+\\
+The fact that Neville interpolation is significantly slower is to be expected, as the currently implemented Neville algorithm, for each of the 1000 to-be-interpolated points, runs a bisection algorithm (loop over 20 points), loops over the kernels (20, in this case), where each loop contains another loop of $20-k$ points, where $k$ is the index of the current iteration of the outer loop. The LU algorithm, in contrast, only has the later nested loop, followed by 40 iterations of simple algebra (forward substitution followed by backward substitution). As such, significantly less calculations are performed in the LU algorithm as compared to the Neville interpolation algorithm. \\
+\\
+This significant increase in speed comes at the cost of a significantly larger accumulated error in the LU decomposition (see also figure \ref{fig:Q2c}), the source of which has been explained above. 
 \end{enumerate}
-
-The forward and backward substition are handled by the following two functions:
-\lstinputlisting[style=pystyle,language=Python,firstline=102,lastline=118]{../02vandermonde.py}
-Full code is given in \texttt{02vandermonde.py}:
-\lstinputlisting[style=pystyle,language=Python]{../02vandermonde.py}
-
-Output of the code is given in \texttt{OUT/02vandermonde.txt}:
-
-\lstinputlisting[style=txtstyle]{../OUT/02vandermonde.txt}
