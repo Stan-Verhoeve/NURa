@@ -177,8 +177,8 @@ def solve_system(M: np.ndarray, y: np.ndarray, Niters: int = None) -> np.ndarray
 
 
 def main():
-    from helper_scripts.interpolation import interpolator
-    from helper_scripts.pretty_printing import (
+    from helperscripts.interpolation import interpolator
+    from helperscripts.prettyprint import (
         pretty_print_array,
         pretty_print_timeit,
     )
