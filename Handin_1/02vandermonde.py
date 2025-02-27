@@ -282,7 +282,7 @@ def main():
     ##############
     ##  Timeit  ##
     ##############
-    number = 10
+    number = 100
     time_neville = timeit.timeit(
         lambda: ipl.interpolate(interp_x, kind="neville"), number=number
     )
