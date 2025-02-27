@@ -278,6 +278,12 @@ def main():
     ax2.plot(x, abs_diff_LU_iter10, c="purple", ls="-.")
 
     plt.savefig("figures/02_vandermonde_Q2c.png", bbox_inches="tight", dpi=300)
+    
+    ##################################
+    ## Measure for condition number ##
+    ##################################
+    condition_number = np.max(np.sum(np.abs(V), axis=1))
+    print(f"Condition number: {condition_number:.2e}")
 
     ##############
     ##  Timeit  ##

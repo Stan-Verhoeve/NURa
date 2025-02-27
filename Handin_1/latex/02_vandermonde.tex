@@ -41,7 +41,11 @@ For any used class methods, see the full code in section \ref{sec:interpolation}
 \\
 Plotting also the Lagrange polynomial yield figure \ref{fig:Q2b}. Note that interpolation using Neville's differs significantly less from the original nodes than LU decomposition. We attribute this to the following:
 \begin{itemize}
-    \item The Vandermonde matrix is ill-conditioned, meaning that small deviations in the initial matrix lead to growing errors in the solution. As such, the LU decomposition is more prone to numerical instability, which is also echoed by the so-called condition number. For the Vandermonde matrix in this question, we find a condition number of order $10^30$, whereas generally a system is considered well-behaved when its condition number is of order 1. 
+    \item The Vandermonde matrix is ill-conditioned, meaning that small deviations in the initial matrix lead to growing errors in the solution. As such, the LU decomposition is more prone to numerical instability, which is also echoed by the so-called condition number. This condition number is calculated using
+\lstinputlisting[style=pystyle,language=Python,firstline=285,lastline=286]{../02vandermonde.py}
+the output of which is given by
+\lstinputlisting[style=txtstyle,firstline=10,lastline=10]{../OUT/02vandermonde.txt}
+For the Vandermonde matrix in this question, we thus find a condition number of order $10^{37}$, whereas generally a system is considered well-conditioned when its condition number is of order 1. We thus indeed find that our Vandermonde matrix is ill-conditioned.
 \item The polynomial coefficients are calculated recursively using an intermediate solution vector, as well as forward- and backwards substitution. For a $20\times20$ matrix, as is the case for this question, this recursive solving means there are at least $40$ places where numerical error can be introduced and accumulated. As such, especially for solutions surrounding larger $x$ coordinates, the accumulated error becomes significant. This is also reflected in figure \ref{fig:Q2b}.
 \end{itemize}
 
@@ -65,7 +69,7 @@ Solving for 1 and 10 iterations yields figure \ref{fig:Q2c}, where no real impro
 
 
 \item Timing of the different approaches is achieved using
-\lstinputlisting[style=pystyle,language=Python,firstline=285, lastline=307]{../02vandermonde.py}
+\lstinputlisting[style=pystyle,language=Python,firstline=290, lastline=313]{../02vandermonde.py}
 the output of which is given by
 \lstinputlisting[style=txtstyle,firstline=11,lastline=25]{../OUT/02vandermonde.txt}
 It is clear that Neville interpolation is significantly (order 1000) slower than LU decomposition, and that there is almost no difference between no and one iteration for LU decomposition. A more significant differnce can be seen between no and 10 iterations.\\
