@@ -2,8 +2,10 @@ import numpy as np
 
 # For plotting
 import matplotlib
+
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
+
 
 def prod(array: list) -> float:
     """
@@ -21,7 +23,7 @@ def prod(array: list) -> float:
     """
     assert isinstance(array, (list, np.ndarray)), "array should be list or ndarray"
     assert len(array) > 0, "length of array should be greater than 0"
-    
+
     # Product, by definition, starts at 1
     product = 1
 
@@ -29,6 +31,7 @@ def prod(array: list) -> float:
     for el in array:
         product *= el
     return product
+
 
 def cumprod(array: list) -> list:
     """
@@ -44,10 +47,11 @@ def cumprod(array: list) -> list:
     cum : list | ndarray
         Cumulative product of all elements in aray
     """
-    
+
     # Iterate over length of array, add product of array up to i
     cum = np.array([prod(array[:i]) for i in range(1, len(array) + 1)])
     return cum
+
 
 def factorial(n: int | list[int]) -> int | list[int]:
     """
@@ -61,14 +65,15 @@ def factorial(n: int | list[int]) -> int | list[int]:
     Returns
     -------
     int | list[int]
-        Factorial of n. If n is a list, return 
+        Factorial of n. If n is a list, return
         list with factorials of all n in list
     """
     n = np.asarray(n)
     assert np.all(n > 0), "n should be positive"
     largest_n = np.max(n)
-    
-    return cumprod(np.arange(1, largest_n + 1))[n-1]
+
+    return cumprod(np.arange(1, largest_n + 1))[n - 1]
+
 
 def power_series_sinc(x: float, k: int) -> float:
     """
@@ -86,11 +91,11 @@ def power_series_sinc(x: float, k: int) -> float:
     -------
     float
         sinc(x) evaluated at `x` up to order `k`
-              
+
     """
     assert isinstance(k, (int, np.int32, np.int64)), "k should be an integer"
     assert k > 1, "Truncation order should be at least 2"
-    
+
     # TODO: Broadcast to work for arrays of x
 
     # Values of k. Start at 1, since k=0 results in 1
@@ -99,9 +104,9 @@ def power_series_sinc(x: float, k: int) -> float:
 
     # Calculate factorials
     factorials = factorial(2 * ks + 1)
-    
+
     # Return Maclaurin series
-    return 1 + np.sum( (-1) ** ks * x ** (2 * ks) / factorials)
+    return 1 + np.sum((-1) ** ks * x ** (2 * ks) / factorials)
 
 
 def main():
@@ -113,12 +118,11 @@ def main():
     # Different truncation orders of k to consider
     truncations = np.arange(2, 11, dtype=int)
     truncated_sinc = np.zeros(truncations.size, dtype=float)
-    
+
     # Iterate over truncation orders, save to array
     for i, k in enumerate(truncations):
         truncated_sinc[i] = power_series_sinc(x, k)
 
-    
     # Difference from sinc defined through library function
     Difference = truncated_sinc - libsinc
 
@@ -137,6 +141,7 @@ def main():
 
     plt.tight_layout()
     plt.show()
+
 
 # Run if not imported
 if __name__ in ("__main__"):
