@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def finite_difference(function, x, h):
     """
     Computes derivative using finite differences
@@ -9,6 +10,7 @@ def finite_difference(function, x, h):
     dy = (function(x + h) - function(x - h)) * h_inv * 0.5
 
     return dy
+
 
 def ridder(function, x, h_init, d, eps, max_iters=10):
     ridder_matrix = np.empty((max_iters, len(x)))
@@ -45,6 +47,7 @@ def ridder(function, x, h_init, d, eps, max_iters=10):
 
     # for i in range(np.shape(D)[0]):
     return df
+
 
 def main():
     # Function to differentiate: x^2 sin(x)
@@ -108,7 +111,7 @@ def main():
 
         ax1.legend()
     fig.savefig("figures/01_differentiation_Q1b.png", bbox_inches="tight", dpi=300)
-    
+
     ############
     ## Ridder ##
     ############
@@ -128,6 +131,7 @@ def main():
     ax1.legend()
 
     fig.savefig("figures/01_differentiation_Q1c.png", bbox_inches="tight", dpi=300)
+
 
 if __name__ in ("__main__"):
     main()
