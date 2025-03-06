@@ -278,7 +278,7 @@ def main():
     ax2.plot(x, abs_diff_LU_iter10, c="purple", ls="-.")
 
     plt.savefig("figures/02_vandermonde_Q2c.png", bbox_inches="tight", dpi=300)
-    
+
     ##################################
     ## Measure for condition number ##
     ##################################
