@@ -37,8 +37,8 @@ def romberg(func, bounds, m=5, err=False, args=None):
 def n(x, a, b, c):
     return ((x / b) ** (a - 3)) * np.exp(-(x / b) ** c)
 
-def func(x, *args):
-    return x ** 2
+def integrand(x, *args):
+    return 4 * np.pi * x**2 * n(x, *args)
 
 def main():
     a=2.4
@@ -46,12 +46,12 @@ def main():
     c=1.6
     bounds = (1e-4, 5)
     
-    result, err = romberg(n, bounds, m=20, err=True, args=(a,b,c))
+    result, err = romberg(integrand, bounds, m=10, err=True, args=(a,b,c))
     A = result ** (-1)
     print(result, err)
     from scipy.integrate import quad
 
-    print(quad(n, *bounds, args=(a,b,c)))
+    print(quad(integrand, *bounds, args=(a,b,c)))
 
     print(A)
     
