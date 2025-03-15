@@ -1,6 +1,9 @@
 import numpy as np
 
-def romberg(func: callable, bounds : tuple, m : int = 5, err : bool = False, args : tuple = ()) -> float:
+
+def romberg(
+    func: callable, bounds: tuple, m: int = 5, err: bool = False, args: tuple = ()
+) -> float:
     """
     Romberg integration method
 
@@ -28,7 +31,9 @@ def romberg(func: callable, bounds : tuple, m : int = 5, err : bool = False, arg
         error.
     """
     if not callable(func):
-        raise TypeError("Expected 'func' to be callable, but got {type(func).__name__}")
+        raise TypeError(
+            "Expected 'func' to be callable, but got {type(func).__name__}"
+        )
 
     # Extract bounds and first step size
     lower, upper = bounds
@@ -40,7 +45,7 @@ def romberg(func: callable, bounds : tuple, m : int = 5, err : bool = False, arg
     # Initial trapezoid (on full domain)
     r[0] = 0.5 * h * (func(lower, *args) + func(upper, *args))
 
-    for i in range(1,m):
+    for i in range(1, m):
         Delta = h
         h *= 0.5
 
@@ -49,14 +54,14 @@ def romberg(func: callable, bounds : tuple, m : int = 5, err : bool = False, arg
         newy = func(newx, *args)
 
         # New estimate
-        r[i] = 0.5 * (r[i-1] + Delta * np.sum(newy))
+        r[i] = 0.5 * (r[i - 1] + Delta * np.sum(newy))
 
     # Iteratively improve solution
-    factor = 1.
+    factor = 1.0
     for i in range(m):
         factor *= 4
-        for j in range(1, m-i):
-            r[j-1] = ( factor * r[j] - r[j-1] ) / (factor - 1)
+        for j in range(1, m - i):
+            r[j - 1] = (factor * r[j] - r[j - 1]) / (factor - 1)
 
     if err:
         return r[0], abs(r[0] - r[1])
