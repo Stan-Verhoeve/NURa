@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def n(x, A, Nsat, a, b, c):
     """
     Number density profile of satellite galaxies
@@ -25,24 +26,25 @@ def n(x, A, Nsat, a, b, c):
         Same type and shape as x. Number density of satellite galaxies
         at given radius x.
     """
-    return A * Nsat * ((x / b) ** (a - 3)) * np.exp(-(x / b) ** c)
+    return A * Nsat * ((x / b) ** (a - 3)) * np.exp(-((x / b) ** c))
+
 
 def main():
     from helperscripts.integrate import romberg
 
     # Default values given in problemset
-    a=2.4
-    b=0.25
-    c=1.6
+    a = 2.4
+    b = 0.25
+    c = 1.6
     Nsat = 100
     bounds = (1e-4, 5)
-    
+
     # 1D integrand to solve for.
     integrand = lambda x, *args: 4 * np.pi * x**2 * n(x, 1, 1, *args)
-    result, err = romberg(integrand, bounds, m=10, args=(a,b,c), err=True)
+    result, err = romberg(integrand, bounds, m=10, args=(a, b, c), err=True)
 
     # Normalisation
-    A = 1. / result
+    A = 1.0 / result
     print(f"Normalisation constant: A = {A}")
 
     # Validate that number density profile integrates to Nsat
