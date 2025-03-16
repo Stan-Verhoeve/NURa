@@ -40,8 +40,8 @@ def main():
     bounds = (0, 5)
 
     # 1D integrand to solve for.
-	# Move 4pi out of the integrand, and reintroduce it
-	# in the end result only
+    # Move 4pi out of the integrand, and reintroduce it
+    # in the end result only
     integrand = lambda x, *args: x**2 * n(x, 1, 1, *args)
     result, err = romberg(integrand, bounds, m=10, args=(a, b, c), err=True)
 
