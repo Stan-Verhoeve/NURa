@@ -1,5 +1,5 @@
 import numpy as np
-
+import warnings
 
 def romberg(
     func: callable, bounds: tuple, m: int = 5, err: bool = False, args: tuple = ()
@@ -30,6 +30,7 @@ def romberg(
         (value, err), with err a first estimate of the (relative)
         error.
     """
+    USE_OPEN = False
     if not callable(func):
         raise TypeError(
             "Expected 'func' to be callable, but got {type(func).__name__}"
@@ -38,28 +39,63 @@ def romberg(
     # Extract bounds and first step size
     lower, upper = bounds
     h = upper - lower
+    
 
+    # TODO: Check if this is correct
+    # Closed integration
+    dividend = 2
+    try:
+        __ = func(lower, *args), func(upper, *args)
+    except:
+        # warnings.warn("Function cannot be evaluated at (one of) the bounds. Switching to midpoint instead", category=UserWarning)
+        print("Function cannot be evaluated at (one of) the bounds. Switching to midpoint instead.")
+        USE_OPEN = True
+        dividend = 3
+
+        # Shift h to be the length to first midpoint
+        h /= 2
+    
     # Array to hold integral guesses
     r = np.zeros(m)
+    
+    # TODO: check if open integration is correct
 
-    # Initial trapezoid (on full domain)
-    r[0] = 0.5 * h * (func(lower, *args) + func(upper, *args))
+    if USE_OPEN:
+        # Initial midpoint (on full domain)
+        r[0] = 2 * h * func(lower + h, *args)
+    else:
+        # Initial trapezoid (on full domain)
+        r[0] = 0.5 * h * (func(lower, *args) + func(upper, *args))
+    
+    # TODO: check if correct
+    # Number of points in refinement
+    N = 1
 
+    # Multiplier for new estimate. Since shifted h --> h/2 in case
+    # of open integration, we should convert this back when calculating
+    # the new estimate
+    multiplier = (dividend - 1)
     for i in range(1, m):
         Delta = h
-        h *= 0.5
-
+        h /= dividend
+        N *= dividend
+        
         # New points to evaluate
-        newx = np.arange(lower + h, upper, Delta)
+        if USE_OPEN:
+            # Grab lower + odd h, but not every 3rd odd number
+            # since these have been calculated in previous loop already
+            newx = np.array([lower + (2 * k + 1) * h for k in range(N) if (k % 3) != 1])
+        else:
+            newx = np.arange(lower + h, upper, Delta)
         newy = func(newx, *args)
 
         # New estimate
-        r[i] = 0.5 * (r[i - 1] + Delta * np.sum(newy))
+        r[i] = (r[i - 1] + (dividend - 1) * Delta * np.sum(newy)) / dividend
 
     # Iteratively improve solution
     factor = 1.0
     for i in range(m):
-        factor *= 4
+        factor *= (dividend ** 2)
         for j in range(1, m - i):
             r[j - 1] = (factor * r[j] - r[j - 1]) / (factor - 1)
 
