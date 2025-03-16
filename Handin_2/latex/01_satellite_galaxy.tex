@@ -1,7 +1,7 @@
 \section{Satellite galaxies around a massive central}
 Throughout this question, we make use of the following number density profile:
 \begin{equation}
-	n(x) = A\langle N_\text{sat}\rangle \left(\frac{a}{b}\right)^{a-3} \exp\left[-\left(\frac{x}{b}\right)^c\right],
+	n(x) = A\langle N_\text{sat}\rangle \left(\frac{x}{b}\right)^{a-3} \exp\left[-\left(\frac{x}{b}\right)^c\right],
 \end{equation}
 where $x$ i the radius relative to the virial radius, $x\equiv r/r_\text{vir}$, and $a$, $b$, and $c$ are free parameters constrolling the small-scale slope, transition scale, and steepness of the exponential drop-off, respectively. $A$ normalized the profile such that the 3D integral from $x=0$ to $x_\text{max}=5$ give the average total number of satellites:
 \begin{equation}
@@ -17,7 +17,7 @@ where $x$ i the radius relative to the virial radius, $x\equiv r/r_\text{vir}$, 
 \end{equation}
 We further realise that $\langle N_\text{sat} \rangle$ appears in $n(x)$, and does not depend on $x$. As such, we can find the normalisation constant by solving for
 \begin{equation}
-	C = 4\pi\bint{0}{5} x^2 \left(\frac{a}{b}\right)^{a-3} \exp\left[-\left(\frac{x}{b}\right)^c\right],
+	C = 4\pi\bint{0}{5} x^2 \left(\frac{x}{b}\right)^{a-3} \exp\left[-\left(\frac{x}{b}\right)^c\right],
 \end{equation}
 and setting $A = \frac{1}{C}$.
 }
