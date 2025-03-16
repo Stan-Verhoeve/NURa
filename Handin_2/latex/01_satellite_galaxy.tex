@@ -1,0 +1,24 @@
+\section{Satellite galaxies around a massive central}
+Throughout this question, we make use of the following number density profile:
+\begin{equation}
+	n(x) = A\langle N_\text{sat}\rangle \left(\frac{a}{b}\right)^{a-3} \exp\left[-\left(\frac{x}{b}\right)^c\right],
+\end{equation}
+where $x$ i the radius relative to the virial radius, $x\equiv r/r_\text{vir}$, and $a$, $b$, and $c$ are free parameters constrolling the small-scale slope, transition scale, and steepness of the exponential drop-off, respectively. $A$ normalized the profile such that the 3D integral from $x=0$ to $x_\text{max}=5$ give the average total number of satellites:
+\begin{equation}
+	\iiint_V n(x)dV = \langle N_\text{sat}\rangle.
+	\label{eq:Nsat}
+\end{equation}
+
+\begin{enumerate}[label=(\alph*)]
+\item {
+	To find the normalisation constant $A$, we solve equation \eqref{eq:Nsat}, where we realise that, since $n(x)$ is a function of radius only, we can transform the 3D integral to a one-dimensional one, where $dV = 4\pi x^2 dx$. We thus have
+\begin{equation}
+	\langle N_\text{sat}\rangle = \bint{0}{5} 4\pi x^2 n(x) dx.
+\end{equation}
+We further realise that $\langle N_\text{sat} \rangle$ appears in $n(x)$, and does not depend on $x$. As such, we can find the normalisation constant by solving for
+\begin{equation}
+	C = 4\pi\bint{0}{5} x^2 \left(\frac{a}{b}\right)^{a-3} \exp\left[-\left(\frac{x}{b}\right)^c\right],
+\end{equation}
+and setting $A = \frac{1}{C}$.
+}
+\end{enumerate}
