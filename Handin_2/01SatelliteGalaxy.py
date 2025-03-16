@@ -37,14 +37,16 @@ def main():
     b = 0.25
     c = 1.6
     Nsat = 100
-    bounds = (1e-4, 5)
+    bounds = (0, 5)
 
     # 1D integrand to solve for.
-    integrand = lambda x, *args: 4 * np.pi * x**2 * n(x, 1, 1, *args)
+	# Move 4pi out of the integrand, and reintroduce it
+	# in the end result only
+    integrand = lambda x, *args: x**2 * n(x, 1, 1, *args)
     result, err = romberg(integrand, bounds, m=10, args=(a, b, c), err=True)
 
     # Normalisation
-    A = 1.0 / result
+    A = 1 / (4 * np.pi * result)
     print(f"Normalisation constant: A = {A}")
 
     # Validate that number density profile integrates to Nsat
