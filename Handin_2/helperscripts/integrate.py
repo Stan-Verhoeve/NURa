@@ -43,7 +43,7 @@ def romberg(
 
     # TODO: Check if this is correct
     # Closed integration
-    dividend = 2
+    divisor = 2
     try:
         __ = func(lower, *args), func(upper, *args)
     except:
@@ -52,7 +52,7 @@ def romberg(
             "Function cannot be evaluated at (one of) the bounds. Switching to midpoint instead."
         )
         USE_OPEN = True
-        dividend = 3
+        divisor = 3
 
         # Shift h to be the length to first midpoint
         h /= 2
@@ -76,11 +76,11 @@ def romberg(
     # Multiplier for new estimate. Since shifted h --> h/2 in case
     # of open integration, we should convert this back when calculating
     # the new estimate
-    multiplier = dividend - 1
+    multiplier = divisor - 1
     for i in range(1, m):
         Delta = h
-        h /= dividend
-        N *= dividend
+        h /= divisor
+        N *= divisor
 
         # New points to evaluate
         if USE_OPEN:
@@ -94,12 +94,12 @@ def romberg(
         newy = func(newx, *args)
 
         # New estimate
-        r[i] = (r[i - 1] + (dividend - 1) * Delta * np.sum(newy)) / dividend
+        r[i] = (r[i - 1] + (divisor - 1) * Delta * np.sum(newy)) / divisor
 
     # Iteratively improve solution
     factor = 1.0
     for i in range(m):
-        factor *= dividend**2
+        factor *= divisor**2
         for j in range(1, m - i):
             r[j - 1] = (factor * r[j] - r[j - 1]) / (factor - 1)
 
