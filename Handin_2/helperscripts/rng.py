@@ -18,11 +18,11 @@ class MWC:
         self.state
             Current state of the generator
         """
-        self.state = self.a * (self.state & (2**32 - 1)) + (self.state >> 32)
+        self.state = self.a * (self.state & np.uint64(2**32 - 1)) + (self.state >> np.uint64(32))
         return self.state
 
     def random(self):
-        return (self.next() & (2**32 - 1)) / 2**32
+        return self.next() & np.uint64(2**32 - 1)
 
 
 def xorshift(seed, a1, a2, a3):
@@ -31,29 +31,29 @@ def xorshift(seed, a1, a2, a3):
     a2 = np.uint64(a2)
     a3 = np.uint64(a3)
 
-    state ^= state >> a1
-    state ^= state << a2
-    state ^= state >> a3
+    state = state ^ (state >> a1)
+    state = state ^ (state << a2)
+    state = state ^ (state >> a3)
 
     return state
 
 
 def LCG(seed, a, c, m):
-    state = np.uint64(seed)
+    state = np.uint32(seed)
     a = np.uint64(a)
     c = np.uint64(c)
     m = np.uint64(m)
 
-    state = (a * state + c) % m
+    state = np.uint64(a * state + c) % m
 
     return state
 
 
-class random:
-    def __init__(self):
-        self.lcg_state = np.uint64(1234567)
-        self.xor_state = np.uint64(9876543)
-        self.mwc = MWC(15648676, 4294957665)
+class Random:
+    def __init__(self, seed):
+        self.lcg_state = np.uint64(seed)
+        self.xor_state = np.uint64(seed + 1)
+        self.mwc = MWC(seed + 2, 4294957665)
 
     def next(self):
         """
@@ -65,24 +65,21 @@ class random:
             Current state of the generator
         """
         # Result of first sub-generator
-        sub1_state = LCG(self.lcg_state, 1664525, 1013904223, 2**32)
+        sub1_state = LCG(self.lcg_state, 1_664_525, 1_013_904_223, 2**32)
         # Feed result of LCG into XOR-shift
-        sub1_state = xorshift(sub1_state, 31, 25, 4)
+        self.lcg_state = xorshift(sub1_state, 13, 17, 5)  # Values for a taken from wiki
 
         # Result of second sub-generator
-        self.xor_state = xorshift(self.xor_state, 17, 9, 23)
+        self.xor_state = xorshift(self.xor_state, 13, 17, 5) # Values for a taken from wiki
 
         # Result of third sub-generator
-        mwc_state = self.mwc.next()
-
+        mwc_state = self.mwc.random()
+        
         # Final output
-        out = (sub1_state + self.xor_state) ^ mwc_state
+        out = (self.lcg_state + self.xor_state) ^ mwc_state
 
-        # Re-feed output to be new lcg state
-        self.lcg_state = out
-
-        return np.uint32(out)
-
+        return out & np.uint64(2**32-1)
+    
     def random(self):
         # Divide by 2 ** 32 to get in [0, 1)
         return self.next() / 2**32
