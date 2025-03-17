@@ -4,7 +4,7 @@ These are my solutions to hand-in 2 for the NURa course. I have organized my cod
     - In these main scripts, various functions and classes for that script are defined
     - These main scripts run all subquestions without distinction / indication. For distinction, see the PDF file generated through LaTeX.
 - Helper routines can be found in the folder [helperscripts](helperscripts). These include
-    - Integration using Romberg ([integration.py](helperscripts/integration.py))
+    - Integration using Romberg ([integrate.py](helperscripts/integration.py))
     - Random number generation ([random.py](helperscripts/random.py))
     - Pretty printing functions ([prettyprint.py](helperscripts/prettyprint.py))
 
