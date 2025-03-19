@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def finite_difference(function, x, h):
     """
     Computes derivative using finite differences
@@ -22,6 +23,7 @@ def finite_difference(function, x, h):
     dy = (function(x + h) - function(x - h)) * h_inv * 0.5
 
     return dy
+
 
 def ridder(function, x, h_init, d, eps, max_iters=10):
     """

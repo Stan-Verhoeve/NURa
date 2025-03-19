@@ -2,11 +2,13 @@ import numpy as np
 import time
 import os
 
+
 def get_time_based_seed():
     """
     Returns a seed based on time in microsec
     """
     return np.uint64(time.time() * 1_000_000)
+
 
 def pearson(x: np.ndarray, y: np.ndarray = None):
     """
@@ -42,6 +44,7 @@ def pearson(x: np.ndarray, y: np.ndarray = None):
 
     return r_xy
 
+
 class MWC:
     def __init__(self, seed, a):
         if not 0 < seed < 2**32:
@@ -59,7 +62,9 @@ class MWC:
         self.state
             Current state of the generator
         """
-        self.state = self.a * (self.state & np.uint64(2**32 - 1)) + (self.state >> np.uint64(32))
+        self.state = self.a * (self.state & np.uint64(2**32 - 1)) + (
+            self.state >> np.uint64(32)
+        )
         return self.state
 
     def random(self):
@@ -110,23 +115,27 @@ class Random:
         # Result of first sub-generator
         sub1_state = LCG(self.lcg_state, 1_664_525, 1_013_904_223, 2**32)
         # Feed result of LCG into XOR-shift
-        self.lcg_state = xorshift(sub1_state, 13, 17, 5)  # Values for a taken from wiki
+        self.lcg_state = xorshift(
+            sub1_state, 13, 17, 5
+        )  # Values for a taken from wiki
 
         # Result of second sub-generator
-        self.xor_state = xorshift(self.xor_state, 13, 17, 5) # Values for a taken from wiki
+        self.xor_state = xorshift(
+            self.xor_state, 13, 17, 5
+        )  # Values for a taken from wiki
 
         # Result of third sub-generator
         mwc_state = self.mwc.random()
-        
+
         # Final output
         out = (self.lcg_state & self.xor_state) ^ mwc_state
 
-        return out & np.uint64(2**32-1)
-    
+        return out & np.uint64(2**32 - 1)
+
     def random(self):
         # Divide by 2 ** 32 to get in [0, 1)
         return self.next() / 2**32
-    
+
     def uniform(self, low=0, high=1, size=1):
         """
         Generate array of uniformly distributed numbers in the range [low, high)
@@ -155,6 +164,7 @@ class Random:
     def randint(self, low=0, high=10, size=1):
         return np.int32(self.uniform(low, high))
 
+
 def fisher_yates(arr, inplace=False):
     """
     Shuffle an array using Fisher-Yates shuffling
@@ -172,12 +182,12 @@ def fisher_yates(arr, inplace=False):
     shuffled : ndarray
         Shuffled array of same shape and dtype of `arr`
     """
-    
+
     if inplace:
         shuffled = arr
     else:
         shuffled = np.copy(arr)
-    
+
     N = len(shuffled)
     generator = Random()
     for i in range(N - 1, 0, -1):
@@ -186,10 +196,11 @@ def fisher_yates(arr, inplace=False):
 
         # Swap places
         shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
-    
+
     # Only return if not modifying original array
     if not inplace:
         return shuffled
+
 
 def choice(arr, size=1):
     """

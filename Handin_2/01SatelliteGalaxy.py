@@ -28,10 +28,11 @@ def n(x, A, Nsat, a, b, c):
     """
     return A * Nsat * ((x / b) ** (a - 3)) * np.exp(-((x / b) ** c))
 
+
 def dn_dx(x, A, Nsat, a, b, c):
     """
     Derivative of number density provide
-    
+
     Parameters
     ----------
     x : float | ndarray
@@ -50,10 +51,19 @@ def dn_dx(x, A, Nsat, a, b, c):
     Returns
     -------
     float | ndarray
-        Same type and shape as x. Derivative of number density of 
+        Same type and shape as x. Derivative of number density of
         satellite galaxies at given radius x.
     """
-    return - A * Nsat * b ** 3 * (x / b) ** (a) * (c * (x/b) ** c - a + 3) * np.exp(-((x/b)**c)) / x**4
+    return (
+        -A
+        * Nsat
+        * b**3
+        * (x / b) ** (a)
+        * (c * (x / b) ** c - a + 3)
+        * np.exp(-((x / b) ** c))
+        / x**4
+    )
+
 
 def main():
     from helperscripts.integrate import romberg
@@ -70,7 +80,7 @@ def main():
     Nsat = 100
     bounds = (0, 5)
     xmin, xmax = 1e-4, 5
-    seed = 1 # For reproducability
+    seed = 1  # For reproducability
     Nsamples = 10_000
     xx = np.linspace(xmin, xmax, Nsamples)
 
@@ -79,7 +89,7 @@ def main():
     # in the end result only
     integrand = lambda x, *args: x**2 * n(x, 1, 1, *args)
     result, err = romberg(integrand, bounds, m=10, args=(a, b, c), err=True)
-    
+
     # Normalisation
     A = 1 / (4 * np.pi * result)
     print(f"Normalisation constant: A = {A}")
@@ -89,7 +99,7 @@ def main():
     integrated_Nsat = romberg(integrand, bounds, m=10, args=(A, Nsat, a, b, c))
     print("\nSanity check")
     print(f"∫∫∫n(x) dV = ⟨Nsat⟩ : {np.isclose(Nsat, integrated_Nsat)}")
-    
+
     #########
     ## Q1b ##
     #########
@@ -100,7 +110,9 @@ def main():
     pmax = np.max(p_of_x(xx, a, b, c))
 
     p_of_x_norm = lambda x, *args: p_of_x(x, *args) / pmax
-    random_samples = rejection(p_of_x_norm, 1e-4, 5, Nsamples, seed=seed, args=(a, b, c))
+    random_samples = rejection(
+        p_of_x_norm, 1e-4, 5, Nsamples, seed=seed, args=(a, b, c)
+    )
 
     ##############
     ## Plotting ##
@@ -114,29 +126,34 @@ def main():
     ax = fig.add_subplot(111)
     ax.stairs(hist_scaled, edges=edges, fill=True, label="Satellite galaxies")
     ax.plot(xx, p_of_x(xx, a, b, c), c="r", ls="-", label="Analytic")
-    
-    ax.set(xlim=(xmin, xmax), 
-           ylim=(10**(-3), 10), 
-           yscale="log", 
-           xscale="log",
-           xlabel="Relative radius", 
-           ylabel="Number of galaxies")
-    ax.legend() 
+
+    ax.set(
+        xlim=(xmin, xmax),
+        ylim=(10 ** (-3), 10),
+        yscale="log",
+        xscale="log",
+        xlabel="Relative radius",
+        ylabel="Number of galaxies",
+    )
+    ax.legend()
     fig.savefig("figures/01_satellite_galaxies_Q1b", bbox_inches="tight", dpi=300)
-    
+
     #########
     ## Q1c ##
     #########
     chosen = choice(random_samples, 100)
     merge_sort_in_place(chosen)
 
-    #Cumulative plot of the chosen galaxies (1c)
+    # Cumulative plot of the chosen galaxies (1c)
     fig, ax = plt.subplots()
     ax.plot(chosen, np.arange(100))
-    ax.set(xscale="log", 
-           xlabel="Relative radius", 
-           ylabel="Cumulative number of galaxies",
-           xlim=(xmin, xmax), ylim=(0, 100))
+    ax.set(
+        xscale="log",
+        xlabel="Relative radius",
+        ylabel="Cumulative number of galaxies",
+        xlim=(xmin, xmax),
+        ylim=(0, 100),
+    )
     fig.savefig("figures/01_satellite_galaxies_Q1c.png", dpi=300)
 
     #########
@@ -151,6 +168,7 @@ def main():
     print(f"Analytic: {dn_dx_analytic}")
     print(f"Numeric : {dn_dx_numeric}")
     print(f"|numeric - analytic| = {abs(dn_dx_analytic - dn_dx_numeric):.3e}")
+
 
 if __name__ in ("__main__"):
     main()
