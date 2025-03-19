@@ -60,7 +60,7 @@ def main():
     from helperscripts.sampling import rejection
     from helperscripts.random import choice
     from helperscripts.differentiate import ridder
-    from helperscripts.sorting import merge_sort
+    from helperscripts.sorting import merge_sort_in_place
     import matplotlib.pyplot as plt
 
     # Default values given in problemset
@@ -128,11 +128,11 @@ def main():
     ## Q1c ##
     #########
     chosen = choice(random_samples, 100)
-    chosen_sorted = merge_sort(chosen)
+    merge_sort_in_place(chosen)
 
     #Cumulative plot of the chosen galaxies (1c)
     fig, ax = plt.subplots()
-    ax.plot(chosen_sorted, np.arange(100))
+    ax.plot(chosen, np.arange(100))
     ax.set(xscale="log", 
            xlabel="Relative radius", 
            ylabel="Cumulative number of galaxies",

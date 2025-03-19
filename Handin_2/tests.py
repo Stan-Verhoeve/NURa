@@ -55,14 +55,15 @@ def test_sorting():
     """
     Test if sorting works as intended
     """
-    from helperscripts.sorting import merge_sort, is_sorted
+    from helperscripts.sorting import merge_sort, merge_sort_in_place, is_sorted
     from helperscripts.random import Random
+
     generator = Random()
     uniform = generator.uniform(size=50)
     
     print(f"Before sorting, is_sorted: {is_sorted(uniform)}")
-    sorted_array = merge_sort(uniform)
-    print(f"After sorting, is_sorted: {is_sorted(sorted_array)}")
+    merge_sort_in_place(uniform)
+    print(f"After sorting, is_sorted: {is_sorted(uniform)}")
 
 if __name__ in ("__main__"):
     print("=======================")
