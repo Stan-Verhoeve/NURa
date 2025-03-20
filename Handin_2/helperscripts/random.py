@@ -71,12 +71,28 @@ class MWC:
         return self.next() & np.uint64(2**32 - 1)
 
 
-def xorshift(seed, a1, a2, a3):
+def xorshift(seed: np.uint64, a1: np.uint64, a2: np.uint64, a3: np.uint64) -> np.uint64:
+    """
+    64-bit XOR-shift random number generator
+
+    Parameters
+    ----------
+    seed : uint64
+        Initial state
+    a1 : uint64
+        First right-shift
+    a2 : uint64
+        Left shift
+    a3 : uint64
+        Second right shift
+    """
+    # Convert all to uint64
     state = np.uint64(seed)
     a1 = np.uint64(a1)
     a2 = np.uint64(a2)
     a3 = np.uint64(a3)
 
+    # XOR shift
     state = state ^ (state >> a1)
     state = state ^ (state << a2)
     state = state ^ (state >> a3)
@@ -84,7 +100,21 @@ def xorshift(seed, a1, a2, a3):
     return state
 
 
-def LCG(seed, a, c, m):
+def LCG(seed: np.uint64, a: np.uint64, c: np.uint64, m: np.uint64) -> np.uint64:
+    """
+    Linear congruent generator
+
+    Parameters
+    ----------
+    seed : uint64
+        Initial state
+    a : uint64
+        Multiplyer
+    c : uint64
+        Adder
+    m : uint64
+        Modulus
+    """
     state = np.uint32(seed)
     a = np.uint64(a)
     c = np.uint64(c)
@@ -136,7 +166,7 @@ class Random:
         # Divide by 2 ** 32 to get in [0, 1)
         return self.next() / 2**32
 
-    def uniform(self, low=0, high=1, size=1):
+    def uniform(self, low: float=0, high: float=1, size: int=1) -> np.ndarray:
         """
         Generate array of uniformly distributed numbers in the range [low, high)
 
@@ -161,11 +191,28 @@ class Random:
 
         return arr
 
-    def randint(self, low=0, high=10, size=1):
+    def randint(self, low: int=0, high: int=10, size: int=1) -> np.ndarray:
+        """
+        Generate array of uniformly distributed integers in the range [low, high)
+
+        Parameters
+        ----------
+        low : int
+            Lower end of domain
+        high : int
+            Higher end of domain
+        size : int
+            Size of array
+
+        Returns
+        -------
+        arr : ndarray
+            Array containing pseudo-random uniformly distributed numbers
+        """
         return np.int32(self.uniform(low, high))
 
 
-def fisher_yates(arr, inplace=False):
+def fisher_yates(arr: np.ndarray, inplace: bool=False) -> np.ndarray:
     """
     Shuffle an array using Fisher-Yates shuffling
 
@@ -180,7 +227,10 @@ def fisher_yates(arr, inplace=False):
     Returns
     -------
     shuffled : ndarray
-        Shuffled array of same shape and dtype of `arr`
+        if inplace=False:
+            Shuffled array of same shape and dtype of `arr`
+        if inplace=True:
+            None
     """
 
     if inplace:
@@ -202,9 +252,22 @@ def fisher_yates(arr, inplace=False):
         return shuffled
 
 
-def choice(arr, size=1):
+def choice(arr: np.ndarray, size: int=1) -> np.ndarray:
     """
-    Grab random samples from array
+    Shuffle an array using Fisher-Yates shuffling
+
+    Parameters
+    ----------
+    arr : ndarray
+        Array to shuffle
+    size : int, optional
+        Number of elements to pick from array
+        The default is 1
+
+    Returns
+    -------
+    shuffled : ndarray
+        Shuffled array with size elements
     """
     if size >= len(arr):
         raise ValueError("Cannot request more samples than array is long.")

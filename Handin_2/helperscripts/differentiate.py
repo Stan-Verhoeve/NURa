@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def finite_difference(function, x, h):
+def finite_difference(function: callable, x: np.ndarray, h: float) -> np.ndarray:
     """
     Computes derivative using finite differences
 
@@ -25,7 +25,7 @@ def finite_difference(function, x, h):
     return dy
 
 
-def ridder(function, x, h_init, d, eps, max_iters=10):
+def ridder(function: callable, x: np.ndarray, h_init: float, d: float, eps: float, max_iters: int=10) -> np.ndarray:
     """
     Ridder's method of differentiation
 
