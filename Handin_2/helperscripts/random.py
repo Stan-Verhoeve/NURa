@@ -48,7 +48,7 @@ def pearson(x: np.ndarray, y: np.ndarray = None):
 class MWC:
     def __init__(self, seed, a):
         if not 0 < seed < 2**32:
-            seed = np.uint64(seed) & (2**32 - 1)
+            seed = np.uint64(seed) & np.uint64(2**32 - 1)
 
         self.state = np.uint64(seed)
         self.a = np.uint64(a)

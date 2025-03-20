@@ -52,7 +52,7 @@ def secant(
     raise ValueError("Maximum iterations reached without converging to root")
 
 
-def false_positive(
+def false_position(
     func: callable,
     bracket: tuple,
     atol: float = 1e-6,
