@@ -1,6 +1,13 @@
 from numpy import inf
 
-def secant(func: callable, bracket: tuple, atol: float=1e-6, rtol: float=1e-6, max_iters: int=100) -> float:
+
+def secant(
+    func: callable,
+    bracket: tuple,
+    atol: float = 1e-6,
+    rtol: float = 1e-6,
+    max_iters: int = 100,
+) -> float:
     """
     Find a root of a function using secant method
 
@@ -25,26 +32,33 @@ def secant(func: callable, bracket: tuple, atol: float=1e-6, rtol: float=1e-6, m
     root : float
         Approximate root
     """
-    # Extract bracket    
+    # Extract bracket
     x0, x1 = bracket
     for i in range(max_iters):
         fx0 = func(x0)
         fx1 = func(x1)
-        
+
         # New best guess
         xnew = x1 - fx1 * (x1 - x0) / (fx1 - fx0)
-        
-        # Convergence criteria 
+
+        # Convergence criteria
         aerr = abs(xnew - x1)
         if (aerr < atol) & (aerr < abs(x1 * rtol)):
             print(f"Best estimate found after {i+1} iterations")
             return xnew, aerr, abs(aerr / x1)
 
         x0, x1 = x1, xnew
-    
+
     raise ValueError("Maximum iterations reached without converging to root")
 
-def false_positive(func: callable, bracket: tuple, atol: float=1e-6, rtol: float=1e-6, max_iters: int=100) -> float:
+
+def false_positive(
+    func: callable,
+    bracket: tuple,
+    atol: float = 1e-6,
+    rtol: float = 1e-6,
+    max_iters: int = 100,
+) -> float:
     """
     Find a root of a function using secant method
 
@@ -69,7 +83,7 @@ def false_positive(func: callable, bracket: tuple, atol: float=1e-6, rtol: float
     root : float
         Approximate root
     """
-    
+
     # Extract bracket and first evaluation
     a, b = bracket
     fa = func(a)
@@ -81,7 +95,7 @@ def false_positive(func: callable, bracket: tuple, atol: float=1e-6, rtol: float
 
     for i in range(max_iters):
         # New guess
-        xnew = b - fb * (b-a) / (fb - fa)
+        xnew = b - fb * (b - a) / (fb - fa)
 
         if func(a) * func(xnew) < 0:
             b = xnew
@@ -89,18 +103,26 @@ def false_positive(func: callable, bracket: tuple, atol: float=1e-6, rtol: float
             a = xnew
         else:
             raise ValueError("No new bracket was found")
-        
+
         # Convergence criteria
         aerr = abs(xnew - x)
         if (aerr < atol) & (aerr < abs(rtol * x)):
             print(f"Best estimate found after {i} iterations")
             return xnew, aerr, abs(aerr / x)
-        
+
         x = xnew
 
     raise ValueError("Maximum iterations reached without converging to root")
 
-def newton_raphson(func: callable, dfunc: callable, x0: float, atol: float=1e-6, rtol: float=1e-6, max_iters: int=100) -> float:
+
+def newton_raphson(
+    func: callable,
+    dfunc: callable,
+    x0: float,
+    atol: float = 1e-6,
+    rtol: float = 1e-6,
+    max_iters: int = 100,
+) -> float:
     """
     Find a root of a functio using Newton-Raphson method
 
@@ -125,28 +147,30 @@ def newton_raphson(func: callable, dfunc: callable, x0: float, atol: float=1e-6,
     root : float
         Approximate root of the function
     """
-    
+
     # Initial guess
     x = x0
-    
+
     # Iterate to update guess
     for i in range(max_iters):
         fx = func(x)
         dfdx = dfunc(x)
-        
+
         # Avoid division by zero
         if dfdx == 0:
-            raise ValueError("Zero derivative encountered. A different initial guess is recommended")
-        
+            raise ValueError(
+                "Zero derivative encountered. A different initial guess is recommended"
+            )
+
         # New best guess
         xnew = x - fx / dfdx
-        
+
         # Convergence criteria
         aerr = abs(xnew - x)
         if (aerr < atol) & (aerr < abs(x * rtol)):
             print(f"Best estimate found after {i+1} iterations")
             return xnew, aerr, abs(aerr / x)
-        
+
         # Update best guess
         x = xnew
 

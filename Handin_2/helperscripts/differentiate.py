@@ -25,7 +25,14 @@ def finite_difference(function: callable, x: np.ndarray, h: float) -> np.ndarray
     return dy
 
 
-def ridder(function: callable, x: np.ndarray, h_init: float, d: float, eps: float, max_iters: int=10) -> np.ndarray:
+def ridder(
+    function: callable,
+    x: np.ndarray,
+    h_init: float,
+    d: float,
+    eps: float,
+    max_iters: int = 10,
+) -> np.ndarray:
     """
     Ridder's method of differentiation
 

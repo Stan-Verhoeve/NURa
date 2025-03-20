@@ -2,7 +2,14 @@ from .random import Random
 from numpy import zeros, uint64, ndarray
 
 
-def rejection(dist: callable, low: float, high: float, Nsamples: int, seed: uint64=None, args: tuple=()) -> ndarray:
+def rejection(
+    dist: callable,
+    low: float,
+    high: float,
+    Nsamples: int,
+    seed: uint64 = None,
+    args: tuple = (),
+) -> ndarray:
     """
     Sample a distribution using rejection sampling
 
@@ -35,7 +42,7 @@ def rejection(dist: callable, low: float, high: float, Nsamples: int, seed: uint
     else:
         U1 = Random()
         U2 = Random()
-    
+
     # Pre-allocate accepted sample array
     accepted = zeros(Nsamples)
     n_accepted = 0
@@ -43,15 +50,15 @@ def rejection(dist: callable, low: float, high: float, Nsamples: int, seed: uint
     while n_accepted < Nsamples:
         x = U1.uniform(low, high, Nsamples)
         y = U2.uniform(size=Nsamples)
-        
+
         # Mask where we should accept
         to_accept = y < dist(x, *args)
         new_x = x[to_accept]
-        
+
         # Remaining free spaces in sampled array
         remaining = Nsamples - n_accepted
         to_add = min(len(new_x), remaining)
-        
+
         # Fill remaining spaces with accepted samples
         accepted[n_accepted : n_accepted + to_add] = new_x[:to_add]
         n_accepted += to_add

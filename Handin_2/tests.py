@@ -75,24 +75,30 @@ def test_roots():
     Test if root-finding works as intended
     """
     from helperscripts.root import secant, newton_raphson, false_position
-    # Known root at x=3
-    known = lambda x: x ** 3 - 27
-    known_derivative = lambda x: 3 * x ** 2
 
-    sec_root, sec_aerr, sec_rerr = secant(known, (-2, 5), atol=1e-10, rtol=1e-10, max_iters=100)
-    new_root, new_aerr, new_rerr = newton_raphson(known, known_derivative, 1, atol=1e-10, rtol=1e-10, max_iters=100)
-    fal_root, fal_aerr, fal_rerr = false_position(known, (-2, 5), atol=1e-10, rtol=1e-10, max_iters=100)
+    # Known root at x=3
+    known = lambda x: x**3 - 27
+    known_derivative = lambda x: 3 * x**2
+
+    sec_root, sec_aerr, sec_rerr = secant(
+        known, (-2, 5), atol=1e-10, rtol=1e-10, max_iters=100
+    )
+    new_root, new_aerr, new_rerr = newton_raphson(
+        known, known_derivative, 1, atol=1e-10, rtol=1e-10, max_iters=100
+    )
+    fal_root, fal_aerr, fal_rerr = false_position(
+        known, (-2, 5), atol=1e-10, rtol=1e-10, max_iters=100
+    )
 
     print("Roots found using secant method:")
     print(f"    {sec_root}")
     print(f"    Absolute error: {sec_aerr}")
     print(f"    Relative error: {sec_rerr}")
-    
+
     print("\nRoots found using Newton-Raphson method:")
     print(f"    {new_root}")
     print(f"    Absolute error: {new_aerr}")
     print(f"    Relative error: {new_rerr}")
-
 
     print("Roots found using false-position method:")
     print(f"    {fal_root}")

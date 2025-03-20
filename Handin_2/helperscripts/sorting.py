@@ -1,5 +1,6 @@
 from numpy import ndarray
 
+
 def merge(left, right):
     sorted_array = []
     i = j = 0
@@ -62,7 +63,7 @@ def merge_in_place(arr: ndarray, left: int, mid: int, right: int) -> None:
             j += 1
 
 
-def merge_sort_in_place(arr: ndarray, left: int=0, right: int=None) -> None:
+def merge_sort_in_place(arr: ndarray, left: int = 0, right: int = None) -> None:
     """
     Merge sort in-place
 
@@ -78,14 +79,14 @@ def merge_sort_in_place(arr: ndarray, left: int=0, right: int=None) -> None:
     # Default behaviour
     if right is None:
         right = len(arr) - 1
-    
+
     # Array is already sorted
     if left >= right:
         return
-    
+
     # Midpoint of the current arrai
     mid = (left + right) // 2
-    
+
     # Recursively sub-divide into smaller arrays
     merge_sort_in_place(arr, left, mid)
     merge_sort_in_place(arr, mid + 1, right)

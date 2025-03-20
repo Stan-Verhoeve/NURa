@@ -71,7 +71,9 @@ class MWC:
         return self.next() & np.uint64(2**32 - 1)
 
 
-def xorshift(seed: np.uint64, a1: np.uint64, a2: np.uint64, a3: np.uint64) -> np.uint64:
+def xorshift(
+    seed: np.uint64, a1: np.uint64, a2: np.uint64, a3: np.uint64
+) -> np.uint64:
     """
     64-bit XOR-shift random number generator
 
@@ -166,7 +168,7 @@ class Random:
         # Divide by 2 ** 32 to get in [0, 1)
         return self.next() / 2**32
 
-    def uniform(self, low: float=0, high: float=1, size: int=1) -> np.ndarray:
+    def uniform(self, low: float = 0, high: float = 1, size: int = 1) -> np.ndarray:
         """
         Generate array of uniformly distributed numbers in the range [low, high)
 
@@ -191,7 +193,7 @@ class Random:
 
         return arr
 
-    def randint(self, low: int=0, high: int=10, size: int=1) -> np.ndarray:
+    def randint(self, low: int = 0, high: int = 10, size: int = 1) -> np.ndarray:
         """
         Generate array of uniformly distributed integers in the range [low, high)
 
@@ -212,7 +214,7 @@ class Random:
         return np.int32(self.uniform(low, high))
 
 
-def fisher_yates(arr: np.ndarray, inplace: bool=False) -> np.ndarray:
+def fisher_yates(arr: np.ndarray, inplace: bool = False) -> np.ndarray:
     """
     Shuffle an array using Fisher-Yates shuffling
 
@@ -252,7 +254,7 @@ def fisher_yates(arr: np.ndarray, inplace: bool=False) -> np.ndarray:
         return shuffled
 
 
-def choice(arr: np.ndarray, size: int=1) -> np.ndarray:
+def choice(arr: np.ndarray, size: int = 1) -> np.ndarray:
     """
     Shuffle an array using Fisher-Yates shuffling
 

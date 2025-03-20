@@ -1,7 +1,9 @@
 import numpy as np
 
 
-def n(x: np.ndarray, A: float, Nsat: float, a: float, b: float, c: float) -> np.ndarray:
+def n(
+    x: np.ndarray, A: float, Nsat: float, a: float, b: float, c: float
+) -> np.ndarray:
     """
     Number density profile of satellite galaxies
 
