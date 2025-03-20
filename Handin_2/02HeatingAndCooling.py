@@ -65,7 +65,7 @@ def main():
     # original bracket. This is important to avoid invalid values
     # in the log
     root, aerr, rerr = false_position(
-        equilibrium, bracket, atol=100, rtol=1e-5, max_iters=int(1e5)
+        equilibrium, bracket, atol=100, rtol=1e-5, max_iters=100
     )
 
     print("Root found using false-position")
@@ -85,7 +85,7 @@ def main():
         func = lambda T: equilibrium2(T, nH)
         func_deriv = lambda T: equilibrium2_deriv(T, nH)
         root, aerr, rerr = newton_raphson(
-            func, func_deriv, x0, atol=1e-10, rtol=1e-10, max_iters=int(1e5)
+            func, func_deriv, x0, atol=1e-8, rtol=1e-10, max_iters=100
         )
 
         print(f"Density nH = {nH}")
