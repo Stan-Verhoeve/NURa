@@ -6,7 +6,10 @@ These are my solutions to hand-in 2 for the NURa course. I have organized my cod
 - Helper routines can be found in the folder [helperscripts](helperscripts). These include
     - Integration using Romberg ([integrate.py](helperscripts/integrate.py))
     - Random number generation ([random.py](helperscripts/random.py))
-    - Pretty printing functions ([prettyprint.py](helperscripts/prettyprint.py))
+    - Sampling techniques ([sampling.py](helperscripts/sampling.py))
+    - Sorting algorithms ([sorting.py](helperscripts/sorting.py))
+    - Differentiation using Ridder method ([differentiate.py](helperscripts/differentiate.py))
+    - Rootfinding ([root.py](helperscripts/root.py))
 
 
 ### Usage
