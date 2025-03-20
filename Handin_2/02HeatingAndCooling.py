@@ -93,6 +93,26 @@ def main():
         print(f"    Absolute error: {aerr}")
         print(f"    Relative error: {rerr}\n")
 
+    ################
+    ## Extra plot ##
+    ################
+    from numpy import logspace
+    import matplotlib.pyplot as plt
+    
+    temperatures = logspace(1, 15, 10_000)
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    for nH in [1e-4, 1, 1e4]:
+        equi = equilibrium2(temperatures, nH)
+        ax.plot(temperatures, equi, label=f"$n_H = {nH}$")
+
+    ax.set(xlabel="Temperature [k]",
+           ylabel="$\Gamma - \Lambda$",
+           xscale="log",
+           yscale="log")
+    ax.legend()
+    fig.savefig("figures/02_heating_and_cooling_extra.png", bbox_inches="tight", dpi=300)
 
 if __name__ in ("__main__"):
     main()
