@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def n(x, A, Nsat, a, b, c):
+def n(x: np.ndarray, A: float, Nsat: float, a: float, b: float, c: float) -> np.ndarray:
     """
     Number density profile of satellite galaxies
 
@@ -29,7 +29,7 @@ def n(x, A, Nsat, a, b, c):
     return A * Nsat * ((x / b) ** (a - 3)) * np.exp(-((x / b) ** c))
 
 
-def dn_dx(x, A, Nsat, a, b, c):
+def dn_dx(x: np.ndarray, A: float, Nsat: float, a: float, b: float, c: float):
     """
     Derivative of number density provide
 
@@ -165,9 +165,9 @@ def main():
     dn_dx_analytic = dn_dx(x_to_eval, A, Nsat, a, b, c)
 
     print("\nDerivative at x=1")
-    print(f"Analytic: {dn_dx_analytic}")
-    print(f"Numeric : {dn_dx_numeric}")
-    print(f"|numeric - analytic| = {abs(dn_dx_analytic - dn_dx_numeric):.3e}")
+    print(f"    Analytic: {dn_dx_analytic}")
+    print(f"    Numeric : {dn_dx_numeric}")
+    print(f"    |numeric - analytic| = {abs(dn_dx_analytic - dn_dx_numeric):.3e}")
 
 
 if __name__ in ("__main__"):
