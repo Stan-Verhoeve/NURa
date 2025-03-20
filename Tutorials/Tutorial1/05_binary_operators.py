@@ -11,7 +11,7 @@ def divisible_by_2m(num: int, m: int, use_shift: bool = True) -> bool:
     use_shift: bool, optional
         Whether to use bit-shifting logic.
         The default is True
-    
+
     returns
     -------
     bool
@@ -29,6 +29,7 @@ def divisible_by_2m(num: int, m: int, use_shift: bool = True) -> bool:
     divisible = (bin_mask & num) == 0
     return divisible
 
+
 def main():
     num, power = 256, 4
     divisible = divisible_by_2m(num, power, use_shift=False)
@@ -36,6 +37,7 @@ def main():
 
     divisible = divisible_by_2m(num, power)
     print(f"{num} divisible by 2**{power}: {divisible} (bit shifting)")
+
 
 if __name__ in ("__main__"):
     main()

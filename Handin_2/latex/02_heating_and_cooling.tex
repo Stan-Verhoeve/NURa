@@ -1,0 +1,46 @@
+\section{Heating and cooling in HII regions}
+\begin{enumerate}[label=(\alph*)]
+\item {
+The heat balance equation is given by
+\begin{align}
+    &\Gamma_\text{pe} = \Lambda_\text{rr}\\
+    &\alpha_B n_H n_e\psi k_B T_c = \alpha_B n_H n_e k_B T \left[0.684 - 0.0416\ln\left(\frac{T_4}{Z2}\right)\right]
+\end{align}
+Cancelling like terms, and moving to one side, we have
+\begin{equation}
+    \psi T_c - T \left[0.684 - 0.0416\ln\left(\frac{T_4}{Z^2}\right)\right] = 0,
+\end{equation}
+which can be solved using a root-finding algorithm. As our function is logarithmic, it is important that the temperature remains positive. To ensure this to be the case, we choose a false-positive rootfinding algorithm, as this algorithm updates its bracket in such a way that, so long as the initial bracket is strictly positive, so will be the brackets in subsequent iterations. Our implementation of the false-positive rootfinding algorithm can be found below:
+\lstinputlisting[style=pystyle, language=Python, firstline=55, lastline=115]{../helperscripts/root.py}
+We then define the following constants:
+\lstinputlisting[style=pystyle, language=Python, firstline=3, lastline=9]{../02HeatingAndCooling.py}
+as well as the following function
+\lstinputlisting[style=pystyle, language=Python, firstline=45, lastline=46]{../02HeatingAndCooling.py}
+to find the equilibrium temperature:
+\lstinputlisting[style=pystyle, language=Python, firstline=58, lastline=74]{../02HeatingAndCooling.py}
+The output of this code can be found in \verb|OUT/02HeatingAndCooling.txt|, and is given by
+\lstinputlisting[style=txtstyle, firstline=1, lastline=5]{../OUT/02HeatingAndCooling.txt}
+}
+
+\item {
+We now add the various sources to the heating and cooling terms. To find the equilibrium temperature, we make use of the following Newton-Raphson foot-finding algorithm:
+\lstinputlisting[style=pystyle, language=Python, firstline=118]{../helperscripts/root.py}
+and define the following constants and functions:
+\lstinputlisting[style=pystyle, language=Python, lastline=42]{../02HeatingAndCooling.py}
+\lstinputlisting[style=pystyle, language=Python, firstline=49, lastline=54]{../02HeatingAndCooling.py}
+We then find the roots for the hydrogen number densities $n_H\in[10^{-4}, 1, 10^4]$ using the following code:
+\lstinputlisting[style=pystyle, language=Python, firstline=76, lastline=94]{../02HeatingAndCooling.py}
+The output is given by
+\lstinputlisting[style=txtstyle, firstline=7]{../OUT/02HeatingAndCooling.txt}
+Of note here is the equilibrium temperature for $n_H = 10^{-4}$, which is given by $T_\text{eq}\approx 1.6\cdot 10^{14}\,\text{K}$, with an absolute and relative error of $0.0$ after only 7 iterations. This is remarkable, as it suggests that the 7th iteration is completely identical to the 6th. The root found is also significantly larger than for $n_H=1$ or $n_H=10^4$. My guess is that for a density $n_H=10^{-4}$, the gas can no longer efficiently cool, and thus starts heating up. This would mean that the equilibrium moves away from zero when temperature increases. At high enough temperatures, I think either the $\ln(\cdot)$ or the combination / accumulation of numerical error in the small constants underflows, making the function suddenly zero. This is also reflected when we plot the equilibrium as function of temperature for the different densities, see figure \ref{fig:diff_dens}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{../figures/02_heating_and_cooling_extra.png}
+    \caption{Equilibrium value as function of temperature. Notice how for $n_H=10^{-4}$ the heating rate dominates over the cooling rate (the equilibrium increases), up until a large temperature, where it suddenly drops down to zero.}
+    \label{fig:diff_dens}
+\end{figure}
+
+}
+
+\end{enumerate}

@@ -1,0 +1,101 @@
+\section{Satellite galaxies around a massive central}
+Throughout this question, we make use of the following number density profile:
+\begin{equation}
+	n(x) = A\langle N_\text{sat}\rangle \left(\frac{x}{b}\right)^{a-3} \exp\left[-\left(\frac{x}{b}\right)^c\right],
+\end{equation}
+where $x$ i the radius relative to the virial radius, $x\equiv r/r_\text{vir}$, and $a$, $b$, and $c$ are free parameters constrolling the small-scale slope, transition scale, and steepness of the exponential drop-off, respectively. $A$ normalized the profile such that the 3D integral from $x=0$ to $x_\text{max}=5$ give the average total number of satellites:
+\begin{equation}
+	\iiint_V n(x)dV = \langle N_\text{sat}\rangle.
+	\label{eq:Nsat}
+\end{equation}
+
+\begin{enumerate}[label=(\alph*)]
+\item {
+	To find the normalisation constant $A$, we solve equation \eqref{eq:Nsat}, where we realise that, since $n(x)$ is a function of radius only, we can transform the 3D integral to a one-dimensional one, where $dV = 4\pi x^2 dx$. We thus have
+\begin{equation}
+	\langle N_\text{sat}\rangle = \bint{0}{5} 4\pi x^2 n(x) dx.
+\end{equation}
+We further realise that $\langle N_\text{sat} \rangle$ appears in $n(x)$, and does not depend on $x$. As such, we can find the normalisation constant by solving for
+\begin{equation}
+	C = 4\pi\bint{0}{5} x^2 \left(\frac{x}{b}\right)^{a-3} \exp\left[-\left(\frac{x}{b}\right)^c\right],
+\end{equation}
+and setting $A = \frac{1}{C}$.\\
+\\
+We solve this integral numerically using a Romberg integration scheme, as presented in listing \ref{lst:romberg}. \\
+\\
+It is important to note that, for the values of $a$, $b$, and $c$ given in the problemset, the function $n(x)$ is undefined at $x=0$. As such, when evaluating on the bound $x=0$, an open integration technique has to be used. Alternatively, since $\lim_{x\rightarrow 0}n(x) = 0$, a sufficiently small $x\neq0$ (e.g. $x=10^{-4}$) can be chosen as the lower bound instead. For this problem, we implement both.\\
+\\
+The code used to find the normalisation constant can be found below:
+\lstinputlisting[style=pystyle, language=Python, caption={Code for finding the normalisatin constant.}, firstline=1, lastline=97]{../01SatelliteGalaxy.py}
+The output of this code can be found in \verb|OUT/01SatelliteGalaxy.txt|, and is given by
+\lstinputlisting[style=txtstyle, caption={Output of the normalisation constant}, firstline=1, lastline=2]{../OUT/01SatelliteGalaxy.txt}
+
+As a sanity check, we confirm that the full function $n(x)$, including normalisation constant $A$, integrates to $\langle N_\text{sat}\rangle$:
+\lstinputlisting[style=pystyle, language=Python, firstline=99, lastline=103]{../01SatelliteGalaxy.py}
+the output of which is given by
+\lstinputlisting[style=txtstyle, firstline=5, lastline=6]{../OUT/01SatelliteGalaxy.txt}.
+The full Romberg integration scheme is given below. Note that we automatically switch to an open midpoint evaluation scheme if the function cannot be evaluated at one of the bounds. To reuse the same structure and make sure we do not need to re-evaluate the function to make our iterative improvement, we need to lower our stepsize $h$ by a factor 3 every iteration. Additionally, the function needs to be evaluated at the midpoint \verb|low + h/2|. We achieve this through lines 53-58, where we set \verb|divisor=3| and redefine \verb|h /= 2|. This brings with it the caveat that we need to reintroduce an additional factor 2 in the update formula (line 97), which we achieve through \verb|divisor-1|. In the case of open integration, this equals 2, and in the case of closed integration (default behaviour), this equals 1, as demanded. \\
+Also of note is the way we calculate the new $x$-values to be evaluated. In order to reuse $x$-values from a previous iteration, in the case of open integration, we need to evaluate at every odd multiple of $h$, except every third. This is because every third multiple of $h$ has been calculated in a previous iteration before.
+\lstinputlisting[style=pystyle, language=Python, caption={Romberg integration scheme with automatic bound detection. If one of the bounds results in undefined behaviour, the integration scheme switches to a midpoint integration. }, label={lst:romberg}]{../helperscripts/integrate.py}
+}
+
+\item {
+The galaxy distribution $p(x)$ is given by 
+\begin{equation}
+    p(x) = 4\pi \int x^2 n(x)dx.
+\end{equation}
+To randomly sample $10\,000$ galaxies from this distribution, we use a simple iterative rejection sampling scheme. In this scheme, we sample in batches, and add to the final array only those samples that are still required (i.e. we discard all samples in a batch that would overshoot the desired amount of samples). The code for this rejection sampling is listed below:
+\lstinputlisting[style=pystyle, language=Python, caption={Code for simple rejection sampling using batches; we sample a uniform distribution in a batch, determine which samples are to be accepted, and add the first $N$ samples that are still permitted before the requested amount of samples has been reached}]{../helperscripts/sampling.py}
+
+For the random uniform distribution, we implement our own pseudo-random generator, constisting of the following three sub-generators:
+\begin{itemize}
+    \item A 64-bit XOR shift feeding into a Linear Congruent Generator (LCG)
+    \item A second 64-bit XOR shift
+    \item A Multiply-With-Carry (MWC)
+\end{itemize}
+We take the logical and (\verb|&|) of sub-generators 1 and 2, and then the logical XOR (\verb|^|) of that output with sub-generator 3. The full implementation can be found below:
+\lstinputlisting[style=pystyle, language=Python, firstline=48, lastline=194]{../helperscripts/random.py}
+For the \verb|Random()| class, when no seed is provided, we seed the sub-generators based on the current time in microseconds:
+\lstinputlisting[style=pystyle, language=Python, firstline=1, lastline=10]{../helperscripts/random.py}
+Given our implementation of rejection sampling, based on the above pseudo-random number generator, we sample $10\,000$ galaxies from the distribution $p(x)$, where we numerically determine the maximum of $p(x)$ for normalisation\footnote{or rather, unitarisation. We ensure that the \textit{maximum} of $p(x)$ is 1, NOT that $p(x)$ \textit{integrates} to 1.}. We then bin our samples in evenly spaced bins in log-space, and normalise based on the bin-width and total number of samples. We overplot the analytic distribution $p(x)$, and show our histogram in figure \ref{fig:Q1b_hist}.\\
+\\
+The figure was created using the following code:
+\lstinputlisting[style=pystyle, language=Python, caption={Code used to create figure \ref{fig:Q1b_hist}. }, firstline=105, lastline=141]{../01SatelliteGalaxy.py}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7
+    \linewidth]{../figures/01_satellite_galaxies_Q1b.png}
+    \caption{Histogram of our sampled galaxies, with the analytic distribution $p(x)$ overplotted in red. Our sampled distribution follows the analytic one well for radii $>10^{-2}$. For radii $<10^{-2}$, our sampling method shows no galaxies. We attribute this to the fact that the probability in this region is low, and that by the nature of rejection sampling, many samples are not accepted. In order for our sampled distribution to follow the analytic one even for radii $<10^{-2}$, a larger sample size is required. Alternatively, a different sampling technique can be used.}
+    \label{fig:Q1b_hist}
+\end{figure}
+}
+\item {We implement a Fisher-Yates shuffling technique to extract 100 galaxies from our initial sample: 
+\lstinputlisting[style=pystyle, language=Python, caption={Implementation of a Fisher-Yates shuffling technique to choose $N$ samples from a larger sampleset.}, firstline=217]{../helperscripts/random.py}
+We then use the following implementation of merge-sort to sort the 100 galaxies on their radius. We achieve in-place sorting by first recursively splitting the total array into smaller sub-arrays, and then "zipping" elements from the left and right bracket together, where we move elements to the right to sort the sub-arrays. 
+\lstinputlisting[style=pystyle, language=Python, caption={In-place merge-sort technique}, firstline=30]{../helperscripts/sorting.py}
+From the sorted array, we plot a cumulative distribution, which can be found in figure \ref{fig:Q1c_cum}. The code can be found below:
+\lstinputlisting[style=pystyle, language=Python, caption={Code used to choose 100 galaxies from the sampled array, as well as sort them and plot them in a cumulative distribution.}, firstline=143, lastline=160]{../01SatelliteGalaxy.py}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{../figures/01_satellite_galaxies_Q1c.png}
+    \caption{Cumulative distribution of 100 sample galaxies. We find that most of our galaxies orbit at radii $10^{-1} < x < 1$. We find no galaxies below $3\cdot10^{-2}$, which is also reflected in our histogram (see figure \ref{fig:Q1b_hist}).}
+    \label{fig:Q1c_cum}
+\end{figure}
+}
+
+\item {
+The analytic derivative of $n(x)$ is given by
+\begin{equation}
+    \diff{n(x)}{x} = -A\langle Nsat\rangle b^3 \left(\frac{x}{b}\right)^a \left(c \left(\frac{x}{b}\right)^c - a + 3\right)\exp\left(-\left[\frac{x}{b}\right]^c\right) x^{-4}.
+\end{equation}
+We calculate the numerical derivative using a Ridder implemenation:
+\lstinputlisting[style=pystyle, language=Python, caption={Ridder differentiation scheme.}]{../helperscripts/differentiate.py}
+We compute the numerical derivative, and compare to the analytic one, using the following code:
+\lstinputlisting[style=pystyle, language=Python, firstline=161, lastline=172]{../01SatelliteGalaxy.py}
+The output of which is given by
+\lstinputlisting[style=txtstyle, firstline=8]{../OUT/01SatelliteGalaxy.txt}.
+We find that our numeric Ridder differentiation is identical to the analytic solution to its 12th digit.
+
+}
+\end{enumerate}
