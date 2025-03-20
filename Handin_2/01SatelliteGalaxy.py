@@ -100,7 +100,7 @@ def main():
     integrand = lambda x, *args: 4 * np.pi * x**2 * n(x, *args)
     integrated_Nsat = romberg(integrand, bounds, m=10, args=(A, Nsat, a, b, c))
     print("\nSanity check")
-    print(f"∫∫∫n(x) dV = ⟨Nsat⟩ : {np.isclose(Nsat, integrated_Nsat)}")
+    print(f"int int int n(x) dV = <Nsat> : {np.isclose(Nsat, integrated_Nsat)}")
 
     #########
     ## Q1b ##
