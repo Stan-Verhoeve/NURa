@@ -91,3 +91,22 @@ def pretty_print_timeit(
 
     print(f"Total time: {totaltime:{formatter}} {units} ({number} runs)")
     print(f"Average time per run: {meantime:{formatter}} {units}")
+
+def pretty_print_title(title: str, style: str = "=") -> None:
+    """
+    Prints a string as a title, surrounded by style
+    Example: =======
+             example
+             =======
+
+    Parameters
+    ----------
+    title : str
+        Title to print
+    style : str
+        Style to surround title with
+    """
+    size = len(title)
+    print(style * size)
+    print(title)
+    print(style * size)
