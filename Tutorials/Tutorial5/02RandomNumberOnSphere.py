@@ -27,6 +27,9 @@ def generate_random_sphere(N: int, r: float = 1.0, method="uniform") -> np.ndarr
     elif method == "acos":
         theta = np.acos(1 - 2 * np.random.uniform(0.0, 1.0, size=N))
         phi = 2 * np.pi * np.random.uniform(0.0, 1.0, size=N)
+    elif method == "acos_phi":
+        theta =2 * np.pi * np.random.uniform(0.0, 1.0, size=N)
+        phi = np.acos(1 - 2 * np.random.uniform(0.0, 1.0, size=N))
     else:
         raise ValueError(f"Method {method} not recognized")
 
@@ -47,7 +50,7 @@ def main():
     ##############
     fig = plt.figure(dpi=300)
     ax = fig.add_subplot(111, projection="3d")
-
+    ax.set_title("Naively sampled")
     axticks = [-1, -0.5, 0, 0.5, 1]
     ax.set_xlabel("x")
     ax.set_ylabel("y")
@@ -59,7 +62,7 @@ def main():
     ax.set_xlim(-1, 1)
     ax.set_ylim(-1, 1)
     ax.set_zlim(-1, 1)
-    ax.scatter(x, y, z, c="b", s=4)
+    ax.scatter(x, y, z, c="k", s=2, alpha=0.3)
 
     fig.savefig("figures/02_random_sphere_Q2a.png", bbox_inches="tight", dpi=300)
 
@@ -70,6 +73,7 @@ def main():
 
     fig = plt.figure(dpi=300)
     ax = fig.add_subplot(111, projection="3d")
+    ax.set_title(r"Sampled with acos($\theta$)")
 
     axticks = [-1, -0.5, 0, 0.5, 1]
     ax.set_xlabel("x")
@@ -82,10 +86,33 @@ def main():
     ax.set_xlim(-1, 1)
     ax.set_ylim(-1, 1)
     ax.set_zlim(-1, 1)
-    ax.scatter(x, y, z, c="b", s=4)
+    ax.scatter(x, y, z, c="k", s=2, alpha=0.3)
 
     fig.savefig("figures/02_random_sphere_Q2b.png", bbox_inches="tight", dpi=300)
 
 
+    ########################
+    ## acos on phi method ##
+    #########################
+    x, y, z = generate_random_sphere(N, method="acos_phi")
+
+    fig = plt.figure(dpi=300)
+    ax = fig.add_subplot(111, projection="3d")
+    ax.set_title(r"Sampled with acos($\phi$)")
+
+    axticks = [-1, -0.5, 0, 0.5, 1]
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
+    ax.set_xticks(axticks)
+    ax.set_yticks(axticks)
+    ax.set_zticks(axticks)
+
+    ax.set_xlim(-1, 1)
+    ax.set_ylim(-1, 1)
+    ax.set_zlim(-1, 1)
+    ax.scatter(x, y, z, c="k", s=2, alpha=0.3)
+
+    fig.savefig("figures/02_random_sphere_Q2c.png", bbox_inches="tight", dpi=300)
 if __name__ in ("__main__"):
     main()
