@@ -2,10 +2,13 @@ import numpy as np
 import warnings
 from .random import Random
 
-def MCintegrator(func: callable, bounds: tuple, params: tuple=(), Npoints: int = 10_000) -> float:
+
+def MCintegrator(
+    func: callable, bounds: tuple, params: tuple = (), Npoints: int = 10_000
+) -> float:
     """
     Monte-carlo integration method
-    
+
     Parameters
     ----------
     func : callable
@@ -26,16 +29,17 @@ def MCintegrator(func: callable, bounds: tuple, params: tuple=(), Npoints: int =
         Estimate of the integral
     """
     # Check for number of dimensions
-    if isinstance(bounds[0], (int,float)):
+    if isinstance(bounds[0], (int, float)):
         bounds = [bounds]
     Ndims = len(bounds)
-    
+
     generator = Random()
     # Generate random numbers
     x_vec = generator.uniform(
         low=[b[0] for b in bounds],
         high=[b[1] for b in bounds],
-        size=(Npoints, Ndims))
+        size=(Npoints, Ndims),
+    )
 
     volume = np.prod([[b[1] - b[0]] for b in bounds])
     yi = func(x_vec, *params)
@@ -43,6 +47,7 @@ def MCintegrator(func: callable, bounds: tuple, params: tuple=(), Npoints: int =
     I = volume / Npoints * np.sum(yi)
 
     return I
+
 
 def romberg(
     func: callable, bounds: tuple, m: int = 5, err: bool = False, args: tuple = ()

@@ -57,7 +57,11 @@ def pretty_print_array(
 
 
 def pretty_print_timeit(
-    totaltime: float, number: int, formatter: str = ".2f", units: str = "ms", indented=0,
+    totaltime: float,
+    number: int,
+    formatter: str = ".2f",
+    units: str = "ms",
+    indented=0,
 ) -> None:
     """
     Prints timeit timing in a neat manner
@@ -89,9 +93,10 @@ def pretty_print_timeit(
 
     totaltime *= prefactor
     meantime *= prefactor
-    
+
     print(f"{indent}Total time: {totaltime:{formatter}} {units} ({number} runs)")
     print(f"{indent}Average time per run: {meantime:{formatter}} {units}")
+
 
 def pretty_print_title(title: str, style: str = "=") -> None:
     """

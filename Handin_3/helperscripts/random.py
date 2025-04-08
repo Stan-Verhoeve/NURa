@@ -44,6 +44,7 @@ def pearson(x: np.ndarray, y: np.ndarray = None):
 
     return r_xy
 
+
 class Random:
     def __init__(self, seed=None):
         if seed is None:
@@ -65,16 +66,18 @@ class Random:
         self.__xor_state ^= self.__xor_state >> np.uint64(13)
         self.__xor_state ^= self.__xor_state << np.uint64(17)
         self.__xor_state ^= self.__xor_state >> np.uint(5)
-    
+
     def __next_mwc(self):
-        self.__mwc_state = self.__mwc_a * (self.__mwc_state & self._mask32) + (self.__mwc_state >> self._32)
+        self.__mwc_state = self.__mwc_a * (self.__mwc_state & self._mask32) + (
+            self.__mwc_state >> self._32
+        )
 
     def _next(self):
         self.__next_xorshift()
         self.__next_mwc()
-        
+
         return (self.__xor_state ^ self.__mwc_state) & self._mask32
-    
+
     def _ensure_array(self, value, size):
         """
         Helper function to ensure that `value` is a numpy array that can be broadcasted
@@ -95,9 +98,9 @@ class Random:
         """
         if isinstance(value, (tuple, list)):
             value = np.array(value)
-        
+
         return np.broadcast_to(value, size)
-    
+
     def uniform(self, low: float = 0, high: float = 1, size: int = 1) -> np.ndarray:
         """
         Generate array of uniformly distributed numbers in the range [low, high)
@@ -122,15 +125,15 @@ class Random:
         raw = np.empty(size, dtype=np.uint32)
         for idx in np.ndindex(size):
             raw[idx] = self._next()
-        
+
         # Normalise to U[0,1)
         norm = raw.astype(np.float64) / np.float64(self._2_to_32)
-        
+
         # Scale default [0, 1) to [low, high)
         arr = norm * (high - low) + low
 
         return arr
-    
+
     def randint(self, low=0, high=10, size=1):
         """
         Generate array of uniformly distributed integers in the range [low, high)

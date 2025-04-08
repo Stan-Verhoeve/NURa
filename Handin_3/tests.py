@@ -1,22 +1,25 @@
 import numpy as np
 
+
 def polynomial(x, coefs):
     if len(coefs) == 1:
         return np.array(coefs)[0]
 
     return np.array(coefs)[0] + x * polynomial(x, coefs[1:])
-    
+
+
 def polynomial_broad(x, coefs):
     powers = np.arange(len(coefs))
     x = np.atleast_1d(x)
-    return np.dot(x[:,None] ** powers, coefs)
+    return np.dot(x[:, None] ** powers, coefs)
+
 
 def test_polynomial_speed():
     from timeit import timeit
     from helperscripts.prettyprint import pretty_print_timeit
 
     x = np.linspace(-10, 10, 1000)
-    coefs = [5,4,3,2,1]
+    coefs = [5, 4, 3, 2, 1]
 
     poly1 = polynomial(x, coefs)
     poly2 = polynomial(x, coefs)
@@ -26,11 +29,12 @@ def test_polynomial_speed():
 
     recursive = timeit(lambda: polynomial(x, coefs), number=Nloops)
     broadcast = timeit(lambda: polynomial_broad(x, coefs), number=Nloops)
-    
+
     print("Polynomial using recursion")
     pretty_print_timeit(recursive, Nloops, units="us", indented=1)
     print("\nPolynomial using broadcasting")
     pretty_print_timeit(broadcast, Nloops, units="us", indented=2)
+
 
 def test_bracketing():
     """
@@ -40,7 +44,7 @@ def test_bracketing():
 
     # Quadratic function with minimum -3 at x=0
     func = lambda x: polynomial(x, (-3, 0, 1))
-    xx = np.linspace(-4, 5, 1000) 
+    xx = np.linspace(-4, 5, 1000)
 
     initial_bracket = (-2, 3)
     bracket = find_bracket(func, *initial_bracket)
@@ -54,17 +58,19 @@ def test_bracketing():
     print(f"    y = {f_bracket}")
 
     import matplotlib.pyplot as plt
+
     plt.figure()
     plt.plot(xx, func(xx))
     plt.scatter(bracket, f_bracket, c="r")
     plt.savefig("figures/tests/test.png", dpi=600)
+
 
 def test_random_generator():
     """
     Test if the random generation works
     as intended
     """
-    from helperscripts.random import Random, pearson 
+    from helperscripts.random import Random, pearson
     from helperscripts.prettyprint import pretty_print_timeit
     from timeit import timeit
     from numpy.random import uniform
@@ -88,17 +94,17 @@ def test_random_generator():
     xnp = points_np[1:]
     ynp = points_np[:-1]
     corr_np = pearson(xnp, ynp)
-    
+
     print("Own RNG")
     print(f"    Average of generated points: {avg}. Expected: 0.5")
     print(f"    Variance of generated points: {var}. Expected: 1/12 = 0.08333...")
     print(f"    Correlation between successive numbers: {corr}")
-    
+
     print("\nNumpy RNG")
     print(f"    Average of generated points: {avg_np}. Expected: 0.5")
     print(f"    Variance of generated points: {var_np}. Expected: 1/12 = 0.08333...")
     print(f"    Correlation between successive numbers: {corr_np}")
-    
+
     # Time the generation
     repeats = 10
     uniform_time = timeit(lambda: generator.uniform(size=100_000), number=repeats)
@@ -109,14 +115,15 @@ def test_random_generator():
     print("Numpy RNG")
     pretty_print_timeit(uniform_time_np, repeats, indented=1)
 
+
 def test_rng_multidim():
     from helperscripts.random import Random
 
     generator = Random()
     uniform = np.random.uniform(size=(10_000, 3))
-    x = uniform[:,0]
-    y = uniform[:,1]
-    z = uniform[:,2]
+    x = uniform[:, 0]
+    y = uniform[:, 1]
+    z = uniform[:, 2]
 
     print("Generated points in 3 dimensions")
     print("Statistics in x")
@@ -131,6 +138,7 @@ def test_rng_multidim():
     print("Statistics over whole array")
     print(f"    Average: {uniform.mean()}. Expected: 0.5")
     print(f"    Variance: {uniform.var()}. Expected: 1/12 = 0.08333...")
+
 
 def test_integration():
     """
@@ -151,12 +159,18 @@ def test_integration():
     open_romberg = romberg(known_open, bounds, m=15)  # Analytic result: 2
     closed_MC = MCintegrator(known_closed, bounds)
     open_MC = MCintegrator(known_open, bounds)
-    
+
     # Time the approaches
     repeats = 100
-    closed_romberg_time = timeit(lambda: romberg(known_closed, bounds, m=15), number=repeats)
-    closed_MC_time = timeit(lambda: MCintegrator(known_closed, bounds), number=repeats)
-    open_romberg_time = timeit(lambda: romberg(known_open, bounds, m=15), number=repeats)
+    closed_romberg_time = timeit(
+        lambda: romberg(known_closed, bounds, m=15), number=repeats
+    )
+    closed_MC_time = timeit(
+        lambda: MCintegrator(known_closed, bounds), number=repeats
+    )
+    open_romberg_time = timeit(
+        lambda: romberg(known_open, bounds, m=15), number=repeats
+    )
     open_MC_time = timeit(lambda: MCintegrator(known_open, bounds), number=repeats)
 
     print("Closed function x^2 (expected: -1/3)")
@@ -170,20 +184,22 @@ def test_integration():
     pretty_print_timeit(open_romberg_time, repeats, indented=2)
     print(f"    MC integration: {open_MC}")
     pretty_print_timeit(open_MC_time, repeats, indented=2)
-    
+
+
 def main():
     from helperscripts.prettyprint import pretty_print_title
+
     pretty_print_title("Now testing bracketing")
     test_bracketing()
-    
+
     print()
     pretty_print_title("Now testing random number generation")
     test_random_generator()
-    
+
     print()
     pretty_print_title("Now testing mutli-dimensional rng")
     test_rng_multidim()
-    
+
     print()
     pretty_print_title("Now testing integration")
     test_integration()
@@ -191,5 +207,7 @@ def main():
     # print()
     # pretty_print_title("Now testing polynomial speed")
     # test_polynomial_speed()
+
+
 if __name__ in ("__main__"):
     main()
