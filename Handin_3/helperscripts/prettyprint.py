@@ -75,10 +75,10 @@ def pretty_print_timeit(
         units for time.
         The default is "ms"
     """
-    prefactor_mapper = {"ms": 1e3, "s": 1, "mus": 1e6}
+    prefactor_mapper = {"ms": 1e3, "s": 1, "us": 1e6}
 
     if units not in prefactor_mapper:
-        raise ValueError("Invalid unit '{units}'. Use 'mus', 'ms', or 's'.")
+        raise ValueError("Invalid unit '{units}'. Use 'us', 'ms', or 's'.")
 
     # Get mean runtime per iteration
     meantime = totaltime / number
