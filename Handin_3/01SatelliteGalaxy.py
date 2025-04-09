@@ -68,24 +68,42 @@ def dn_dx(x: np.ndarray, A: float, Nsat: float, a: float, b: float, c: float):
 
 def main():
     from helperscripts.integrate import romberg
+    from helperscripts.optimize import golden_section
 
     # Default values given in problemset
     a = 2.4
     b = 0.25
     c = 1.6
     Nsat = 100
-    bounds = (0, 5)
-    xmin, xmax = 1e-4, 5
+    A = 256 / (5 * np.pi**1.5)
 
-    # 1D integrand to solve for.
-    # Move 4pi out of the integrand, and reintroduce it
-    # in the end result only
-    integrand = lambda x, *args: x**2 * n(x, 1, 1, *args)
-    result, err = romberg(integrand, bounds, m=10, args=(a, b, c), err=True)
+    # TODO: double-check bracket?
+    #       use other minimization routine?
+    bracket = (0.1, 0.2)
 
-    # Normalisation
-    A = 1 / (4 * np.pi * result)
-    print(f"Normalisation constant: A = {A}")
+    xx = np.linspace(1e-8, 5, 1000)
+
+    # Function to minimize. This is -x^2 n(x)
+    # Move 4pi ou, and reintroduce it in the end result only
+    func = lambda x, *args: -x**2 * n(x, 1, 1, *args)
+    N_of_x = lambda x, *args: 4*np.pi*x**2 * n(x, A, Nsat, *args)
+    
+    # Find minimum of func (maximum of N(x))
+    xmin = golden_section(func, *bracket, args=(a,b,c), atol=1e-8)
+    print(f"Maximum found at x={xmin}")
+    print(f"Function value at maximum: N(x) = {N_of_x(xmin, a, b, c)}")
+
+    
+    # TODO: test. Remove before handing in
+    from matplotlib import pyplot as plt
+    
+    plt.figure()
+    plt.plot(xx, func(xx, a, b, c))
+    plt.scatter(xmin, func(xmin, a, b, c), c="r")
+    plt.xscale("log")
+    # plt.yscale("log")
+    plt.savefig("figures/tests/01Satellite_test.png")
+
 
 if __name__ in ("__main__"):
     main()
