@@ -68,20 +68,22 @@ def test_bracketing():
 def test_find_min():
     from helperscripts.optimize import golden_section, golden_section_gpt
     from helperscripts.prettyprint import pretty_print_timeit
-    
+
     # Quadratic function with minimum -3 at x=0
     func = lambda x: polynomial(x, (-3, 0, 1))
-    xx = np.linspace(-5,5,1000)
+    xx = np.linspace(-5, 5, 1000)
 
     initial_bracket = (-2, 2)
     minimum = golden_section(func, *initial_bracket, atol=1e-12)
     print(f"Minimum found at {minimum:.2e}. Expected: 0.")
 
     import matplotlib.pyplot as plt
+
     plt.figure()
     plt.plot(xx, func(xx))
     plt.scatter(minimum, func(minimum), c="r", label="Found using golden_section")
     plt.savefig("figures/tests/minimum.png", dpi=600)
+
 
 def test_random_generator():
     """
@@ -209,7 +211,7 @@ def main():
 
     pretty_print_title("Now testing bracketing")
     test_bracketing()
-    
+
     print()
     pretty_print_title("Now testing minimization")
     test_find_min()

@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def n(
     x: np.ndarray, A: float, Nsat: float, a: float, b: float, c: float
 ) -> np.ndarray:
@@ -85,18 +86,17 @@ def main():
 
     # Function to minimize. This is -x^2 n(x)
     # Move 4pi ou, and reintroduce it in the end result only
-    func = lambda x, *args: -x**2 * n(x, 1, 1, *args)
-    N_of_x = lambda x, *args: 4*np.pi*x**2 * n(x, A, Nsat, *args)
-    
+    func = lambda x, *args: -(x**2) * n(x, 1, 1, *args)
+    N_of_x = lambda x, *args: 4 * np.pi * x**2 * n(x, A, Nsat, *args)
+
     # Find minimum of func (maximum of N(x))
-    xmin = golden_section(func, *bracket, args=(a,b,c), atol=1e-8)
+    xmin = golden_section(func, *bracket, args=(a, b, c), atol=1e-8)
     print(f"Maximum found at x={xmin}")
     print(f"Function value at maximum: N(x) = {N_of_x(xmin, a, b, c)}")
 
-    
     # TODO: test. Remove before handing in
     from matplotlib import pyplot as plt
-    
+
     plt.figure()
     plt.plot(xx, func(xx, a, b, c))
     plt.scatter(xmin, func(xmin, a, b, c), c="r")

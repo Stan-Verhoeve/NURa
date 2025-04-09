@@ -76,26 +76,27 @@ def find_bracket(
 
 def golden_section(func, a, b, args=(), atol=1e-3, rtol=1e-3, max_iters=100):
     bracket = find_bracket(func, a, b, args, max_iters)
-    
-    # Set mask to zero if left is largest. That way, we can grab the 
+
+    # Set mask to zero if left is largest. That way, we can grab the
     # largest interval using bracket[largest_mask:1+largest_mask]
     # which will return (a,b) if left is largest, and (b,c) if right is largest
-    largest_mask = abs(bracket[1]-bracket[0]) < abs(bracket[2]-bracket[1])
-    
+    largest_mask = abs(bracket[1] - bracket[0]) < abs(bracket[2] - bracket[1])
 
     for _ in range(max_iters):
-        # If left interval, this reverses the order (a,b) to (b,a), 
+        # If left interval, this reverses the order (a,b) to (b,a),
         # whereas if right interval, this keeps the order (b,c)
         # This guarantees x is always the other edge of the largest
         # interval
-        b, x = bracket[largest_mask:largest_mask+2][::(-1) ** (largest_mask + 1)]
-        
+        b, x = bracket[largest_mask : largest_mask + 2][
+            :: (-1) ** (largest_mask + 1)
+        ]
+
         # Index of the point x
         idx = 2 * (1 - largest_mask)
 
         # Propose new point
         d = b + (x - b) * (2 - PHI)
-        
+
         # Return if desired tolerance has been reached
         if abs(bracket[2] - bracket[0]) < atol:
             return d if func(d, *args) < func(b, *args) else b
@@ -112,11 +113,11 @@ def golden_section(func, a, b, args=(), atol=1e-3, rtol=1e-3, max_iters=100):
             # and bracket[1] == d            (equiv: bracket[1] == d
             bracket[idx] = bracket[1]
             bracket[1] = d
-    
+
         else:
             # if between b and c (right interval), largest_mask = 1
             # and we need c=d --> bracket[2] = d
-            
+
             # if between a and b (left interval), largest_mas = 0
             # and we need a=d --> bracket[0] = d
             bracket[idx] = d
@@ -124,9 +125,10 @@ def golden_section(func, a, b, args=(), atol=1e-3, rtol=1e-3, max_iters=100):
             # New largest is one we did not tighten.
             # Only if func(d) >= func(b) do we switch
             # which interval we tightened
-            largest_mask = (not largest_mask)
-    
+            largest_mask = not largest_mask
+
     raise RuntimeError("Maximum iterations reached without finding a minimum")
+
 
 def golden_section_gpt(func, a, b, args=(), atol=1e-3, rtol=1e-3, max_iters=100):
     bracket = find_bracket(func, a, b, args)
@@ -154,4 +156,3 @@ def golden_section_gpt(func, a, b, args=(), atol=1e-3, rtol=1e-3, max_iters=100)
                 c = d
             else:
                 a = d
-
