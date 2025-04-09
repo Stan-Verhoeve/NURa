@@ -24,6 +24,36 @@ else
     rm -rf OUT/*
 fi
 
+# Check if folder for data exists
+if [[ ! -d "Data" ]]; then
+    # If not, create it
+    echo "Creating 'Data' directory..."
+    mkdir Data
+    
+    # And download data files to it
+    echo "Downloading satellite data..."
+    wget -P ./Data https://home.strw.leidenuniv.nl/~daalen/Handin_files/satgals_m11.txt
+    wget -P ./Data https://home.strw.leidenuniv.nl/~daalen/Handin_files/satgals_m12.txt
+    wget -P ./Data https://home.strw.leidenuniv.nl/~daalen/Handin_files/satgals_m13.txt
+    wget -P ./Data https://home.strw.leidenuniv.nl/~daalen/Handin_files/satgals_m14.txt
+    wget -P ./Data https://home.strw.leidenuniv.nl/~daalen/Handin_files/satgals_m15.txt
+else
+    echo "'Data' directory already exists. Now checking for missing files..."
+
+    # List of expected files
+    for i in {11..15}; do
+        file="satgals_m${i}.txt"
+        filepath="./Data/$file"
+        url="https://home.strw.leidenuniv.nl/~daalen/Handin_files/$file"
+
+        if [[ ! -f "$filepath" ]]; then
+            echo "$file is missing. Downloading..."
+            wget -P ./Data "$url"
+        else
+            echo "$file already exists."
+        fi
+    done
+fi
 # Do we have command line arguments?
 if [[ -n "$1" ]]; then
     script="$1"
