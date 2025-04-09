@@ -44,7 +44,7 @@ def test_bracketing():
 
     # Quadratic function with minimum -3 at x=0
     func = lambda x: polynomial(x, (-3, 0, 1))
-    xx = np.linspace(-4, 5, 1000)
+    xx = np.linspace(-5, 5, 1000)
 
     initial_bracket = (-2, 3)
     bracket = find_bracket(func, *initial_bracket)
@@ -62,8 +62,26 @@ def test_bracketing():
     plt.figure()
     plt.plot(xx, func(xx))
     plt.scatter(bracket, f_bracket, c="r")
-    plt.savefig("figures/tests/test.png", dpi=600)
+    plt.savefig("figures/tests/bracketing.png", dpi=600)
 
+
+def test_find_min():
+    from helperscripts.optimize import golden_section, golden_section_gpt
+    from helperscripts.prettyprint import pretty_print_timeit
+    
+    # Quadratic function with minimum -3 at x=0
+    func = lambda x: polynomial(x, (-3, 0, 1))
+    xx = np.linspace(-5,5,1000)
+
+    initial_bracket = (-2, 2)
+    minimum = golden_section(func, *initial_bracket, atol=1e-12)
+    print(f"Minimum found at {minimum:.2e}. Expected: 0.")
+
+    import matplotlib.pyplot as plt
+    plt.figure()
+    plt.plot(xx, func(xx))
+    plt.scatter(minimum, func(minimum), c="r", label="Found using golden_section")
+    plt.savefig("figures/tests/minimum.png", dpi=600)
 
 def test_random_generator():
     """
@@ -161,7 +179,7 @@ def test_integration():
     open_MC = MCintegrator(known_open, bounds)
 
     # Time the approaches
-    repeats = 100
+    repeats = 10
     closed_romberg_time = timeit(
         lambda: romberg(known_closed, bounds, m=15), number=repeats
     )
@@ -191,18 +209,22 @@ def main():
 
     pretty_print_title("Now testing bracketing")
     test_bracketing()
+    
+    print()
+    pretty_print_title("Now testing minimization")
+    test_find_min()
 
     print()
-    pretty_print_title("Now testing random number generation")
-    test_random_generator()
+    # pretty_print_title("Now testing random number generation")
+    # test_random_generator()
 
     print()
-    pretty_print_title("Now testing mutli-dimensional rng")
-    test_rng_multidim()
+    # pretty_print_title("Now testing mutli-dimensional rng")
+    # test_rng_multidim()
 
     print()
-    pretty_print_title("Now testing integration")
-    test_integration()
+    # pretty_print_title("Now testing integration")
+    # test_integration()
 
     # print()
     # pretty_print_title("Now testing polynomial speed")
