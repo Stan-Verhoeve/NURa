@@ -161,17 +161,17 @@ def golden_section_gpt(func, a, b, args=(), atol=1e-3, rtol=1e-3, max_iters=100)
 
 
 def levenberg_marquardt(
-        data: np.ndarray,
-        model: callable,
-        sigma: callable,
-        derivatives: tuple,
-        logL: callable,
-        dlogL_dp: callable,
-        p0: np.ndarray,
-        step: float=1e-3,
-        weight: float=10,
-        max_iters: int=100,
-        atol: float=0.01,
+    data: np.ndarray,
+    model: callable,
+    sigma: callable,
+    derivatives: tuple,
+    logL: callable,
+    dlogL_dp: callable,
+    p0: np.ndarray,
+    step: float = 1e-3,
+    weight: float = 10,
+    max_iters: int = 100,
+    atol: float = 0.01,
 ):
     """
     Levenberg-Marquardt routine to maximize a chi-squared problem.
@@ -225,10 +225,10 @@ def levenberg_marquardt(
 
     # Pre-calculate
     weight_inv = 1 / weight
-    
+
     # Standard deviation of model under consideration
     sm = sigma(x, *p)
-    
+
     # Previous logL to compare to
     logL_prev = logL(data, model, sm, p)
 
@@ -236,7 +236,7 @@ def levenberg_marquardt(
 
         # Standard deviation of model under consideration
         sm = sigma(x, *p)
-        sigma_inv = 1/sm
+        sigma_inv = 1 / sm
 
         # Abort if step becomes too large
         if step > 1e10:

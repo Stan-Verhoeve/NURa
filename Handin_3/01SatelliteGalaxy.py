@@ -121,7 +121,7 @@ def main():
         # Normalised histogram
         hist = np.histogram(radius, bins=edges)[0]
         hist_scaled = hist / np.diff(edges) / nhalo
-        
+
         # Averagey galaxies per halo
         Ntest = len(radius) / nhalo
 
@@ -136,22 +136,25 @@ def main():
 
         def model(x, a, b, c):
             return 4 * np.pi * x**2 * n(x, 1, Ntest, a, b, c)
-        
+
         from helperscripts.integrate import romberg
+
         def binned_model(x, a, b, c):
             # A_inv = romberg(model, (1e-4, 5), m=10, args=(a,b,c))
-            
+
             result = np.zeros_like(x)
             diffs = np.diff(edges)
-            for i in range(len(edges)-1):
-                result[i] = romberg(model, (edges[i], edges[i+1]), m=10, args=(a,b,c))
-            
+            for i in range(len(edges) - 1):
+                result[i] = romberg(
+                    model, (edges[i], edges[i + 1]), m=10, args=(a, b, c)
+                )
+
             # return np.sum(result) * result / diffs / A_inv
             return result / diffs
 
         def sigma(x, a, b, c):
             return np.sqrt(binned_model(x, a, b, c))
-        
+
         def sigma_const(x, a, b, c):
             return np.sqrt(Ntest) * np.ones_like(x)
 
@@ -171,11 +174,11 @@ def main():
         # Levenberg-Marquardt fitting procedure
 
         # Variances based on current model params
-        # TODO: Is this correct?? 
+        # TODO: Is this correct??
         params = levenberg_marquardt(
             data=data,
             model=binned_model,
-            sigma=sigma, # np.sqrt(Ntest),
+            sigma=sigma,  # np.sqrt(Ntest),
             derivatives=(dn_da, dn_db, dn_dc),
             logL=gaussian_logL,
             dlogL_dp=gaussian_logL_gradient,
@@ -185,12 +188,12 @@ def main():
             max_iters=300,
             atol=0.01,
         )
-        
+
         # Constant variances
         params_const = levenberg_marquardt(
             data=data,
             model=binned_model,
-            sigma=sigma_const, # np.sqrt(Ntest),
+            sigma=sigma_const,  # np.sqrt(Ntest),
             derivatives=(dn_da, dn_db, dn_dc),
             logL=gaussian_logL,
             dlogL_dp=gaussian_logL_gradient,
@@ -204,7 +207,9 @@ def main():
         #       Keep in as comparison? Or remove later?
         from scipy.optimize import curve_fit
 
-        popt, pcov = curve_fit(model, data[:, 0], data[:, 1], p0, sigma=np.sqrt(Ntest))
+        popt, pcov = curve_fit(
+            model, data[:, 0], data[:, 1], p0, sigma=np.sqrt(Ntest)
+        )
 
         print("    Best fitting parameters using Levenberg-Marquardt")
         print(f"        a={params[0]}")
@@ -218,7 +223,7 @@ def main():
         row = i // 2
         col = i % 2
         axs[row, col].set(
-            title=fr"$M_h \approx 10^{{{11+i}}} M_{{\odot}}/h$",
+            title=rf"$M_h \approx 10^{{{11+i}}} M_{{\odot}}/h$",
             xlabel="x",
             ylabel=r"N/$\langle N_\text{sat}\rangle$",
             xscale="log",
@@ -229,12 +234,27 @@ def main():
 
         axs[row, col].stairs(hist_scaled, edges=edges, label="Binned data")
         axs[row, col].plot(
-            xx, model(xx, *popt), lw=5, c="gray", alpha=0.5, label="Best-fit profile (scipy curve_fit)"
+            xx,
+            model(xx, *popt),
+            lw=5,
+            c="gray",
+            alpha=0.5,
+            label="Best-fit profile (scipy curve_fit)",
         )
-        axs[row, col].stairs(binned_model(centers, *params), edges=edges, ec="k", label="Best-fit profile \n(Levenberg-Marquardt, non-constant $\\sigma$)")
-        axs[row, col].stairs(binned_model(centers, *params_const), edges=edges, ec="r", label="Best-fit profile \n(Levenberg-Marquardt, consant $\\sigma$)")
-    handles,labels = axs[2,0].get_legend_handles_labels()
-    plt.figlegend(handles, labels, loc=(0.6,0.15))
+        axs[row, col].stairs(
+            binned_model(centers, *params),
+            edges=edges,
+            ec="k",
+            label="Best-fit profile \n(Levenberg-Marquardt, non-constant $\\sigma$)",
+        )
+        axs[row, col].stairs(
+            binned_model(centers, *params_const),
+            edges=edges,
+            ec="r",
+            label="Best-fit profile \n(Levenberg-Marquardt, consant $\\sigma$)",
+        )
+    handles, labels = axs[2, 0].get_legend_handles_labels()
+    plt.figlegend(handles, labels, loc=(0.6, 0.15))
     axs[2, 1].set_visible(False)
 
     fig.tight_layout()

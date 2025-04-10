@@ -4,6 +4,7 @@ import numpy as np
 ## Gaussian likelihoods ##
 ##########################
 
+
 def gaussian_logL(data, model, sigma, p):
     """
     Gaussian log-likelihood
@@ -27,9 +28,10 @@ def gaussian_logL(data, model, sigma, p):
     float
         log-likelihood assuming Gaussian errors
     """
-    x, y = data[:,0], data[:,1]
+    x, y = data[:, 0], data[:, 1]
     res = (y - model(x, *p)) / sigma
     return np.sum(res**2)
+
 
 def gaussian_logL_gradient(data, model, sigma, derivatives, p):
     """
@@ -67,9 +69,11 @@ def gaussian_logL_gradient(data, model, sigma, derivatives, p):
 
     return -2 * J.T @ res
 
+
 ############################
 ## Poissonian likelihoods ##
 ############################
+
 
 def poissonian_logL(data, model, sigma, p):
     """
@@ -97,6 +101,7 @@ def poissonian_logL(data, model, sigma, p):
     x, y = data[:, 0], data[:, 1]
     y_model = model(x, *p)
     return np.sum(y * np.log(y_model + 1e-10) - y_model)
+
 
 def poissonian_logL_gradient(data, model, sigma, derivatives, p):
     """
@@ -126,10 +131,9 @@ def poissonian_logL_gradient(data, model, sigma, derivatives, p):
     """
     x, y = data[:, 0], data[:, 1]
     f = model(x, *p)
-    
+
     # Jacobian
     J = [df(x, *p) for df in derivatives]
     J = np.stack(J, axis=1)
     res = y / f - 1
     return J.T @ res
-
