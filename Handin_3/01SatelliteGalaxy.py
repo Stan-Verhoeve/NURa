@@ -129,6 +129,8 @@ def main():
         #######################
         ## Levenberg fitting ##
         #######################
+        
+        # TODO: Move these functions to helperscripts?
 
         # Gradient wrt model parameters for Gaussian errors
         def gauss_grad(data, model, sigma, derivatives, p):
@@ -170,6 +172,8 @@ def main():
         ##########################################
         ## Model and derivatives wrt parameters ##
         ##########################################
+        # TODO: See if possible to move to helperscript?
+
         def model(x, a, b, c):
             return 4*np.pi * x**2 * n(x, 1, Ntest, a, b, c)
         
