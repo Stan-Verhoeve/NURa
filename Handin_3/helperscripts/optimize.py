@@ -131,35 +131,6 @@ def golden_section(func, a, b, args=(), atol=1e-3, rtol=1e-3, max_iters=100):
 
     raise RuntimeError("Maximum iterations reached without finding a minimum")
 
-
-def golden_section_gpt(func, a, b, args=(), atol=1e-3, rtol=1e-3, max_iters=100):
-    bracket = find_bracket(func, a, b, args)
-    a, b, c = bracket
-
-    for _ in range(max_iters):
-        # Decide which interval is bigger
-        if abs(c - b) > abs(b - a):
-            x = c
-            d = b + (x - b) * (2 - PHI)
-        else:
-            x = a
-            d = b + (x - b) * (2 - PHI)
-
-        if abs(c - a) < atol:
-            return d if func(d) < func(b) else b
-
-        if func(d) < func(b):
-            if x == c:
-                a, b = b, d
-            else:
-                c, b = b, d
-        else:
-            if x == c:
-                c = d
-            else:
-                a = d
-
-
 def levenberg_marquardt(
     data: np.ndarray,
     model: callable,
