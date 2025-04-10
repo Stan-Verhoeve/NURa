@@ -159,13 +159,13 @@ def main():
             return np.sqrt(Ntest) * np.ones_like(x)
 
         def dn_da(x, a, b, c):
-            return model(x, a, b, c) * np.log(x / b)
+            return binned_model(x, a, b, c) * np.log(x / b)
 
         def dn_db(x, a, b, c):
-            return model(x, a, b, c) * (c * (x / b) ** c - (a - 3)) / b
+            return binned_model(x, a, b, c) * (c * (x / b) ** c - (a - 3)) / b
 
         def dn_dc(x, a, b, c):
-            return -model(x, a, b, c) * np.log(x / b) * (x / b) ** c
+            return -binned_model(x, a, b, c) * np.log(x / b) * (x / b) ** c
 
         # Initial guess and data matrix
         p0 = [1.5, 0.5, 1.5]
@@ -208,7 +208,7 @@ def main():
         from scipy.optimize import curve_fit
 
         popt, pcov = curve_fit(
-            model, data[:, 0], data[:, 1], p0, sigma=np.sqrt(Ntest)
+            binned_model, data[:, 0], data[:, 1], p0, sigma=np.sqrt(Ntest)
         )
 
         print("    Best fitting parameters using Levenberg-Marquardt")
@@ -225,7 +225,7 @@ def main():
         axs[row, col].set(
             title=rf"$M_h \approx 10^{{{11+i}}} M_{{\odot}}/h$",
             xlabel="x",
-            ylabel=r"N/$\langle N_\text{sat}\rangle$",
+            ylabel=r"N",
             xscale="log",
             yscale="log",
             xlim=(1e-4, 5),
@@ -233,11 +233,11 @@ def main():
         )
 
         axs[row, col].stairs(hist_scaled, edges=edges, label="Binned data")
-        axs[row, col].plot(
-            xx,
-            model(xx, *popt),
+        axs[row, col].stairs(
+            binned_model(centers, *popt),
+            edges=edges,
             lw=5,
-            c="gray",
+            ec="gray",
             alpha=0.5,
             label="Best-fit profile (scipy curve_fit)",
         )
