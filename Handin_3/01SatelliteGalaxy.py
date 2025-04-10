@@ -191,7 +191,7 @@ def main():
         params = levenberg_marquardt(
             data=data,
             model=model,
-            sigma=Ntest,
+            sigma=np.sqrt(Ntest),
             derivatives=(dn_da, dn_db, dn_dc),
             logL=logL,
             dlogL_dp=gauss_grad,
