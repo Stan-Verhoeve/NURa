@@ -62,11 +62,14 @@ def test_bracketing():
     plt.figure()
     plt.plot(xx, func(xx))
     plt.scatter(bracket, f_bracket, c="r")
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.title("Testing initial bracketing")
     plt.savefig("figures/tests/bracketing.png", dpi=600)
 
 
 def test_find_min():
-    from helperscripts.optimize import golden_section, golden_section_gpt
+    from helperscripts.optimize import golden_section
     from helperscripts.prettyprint import pretty_print_timeit
 
     # Quadratic function with minimum -3 at x=0
@@ -82,6 +85,9 @@ def test_find_min():
     plt.figure()
     plt.plot(xx, func(xx))
     plt.scatter(minimum, func(minimum), c="r", label="Found using golden_section")
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.title("Testing golden section search for minimum")
     plt.savefig("figures/tests/minimum.png", dpi=600)
 
 
@@ -89,7 +95,7 @@ def test_levenberg():
     from helperscripts.optimize import levenberg_marquardt
     import numpy as np
 
-    xdata = np.linspace(1e-3, 5, 10)
+    xdata = np.linspace(1e-3, 5, 50)
     xplot = np.linspace(1e-3, 5, 1000)
 
     ## True model ##
@@ -131,7 +137,7 @@ def test_levenberg():
     params = levenberg_marquardt(
         data=data,
         model=model,
-        sigma=sigma,
+        sigma=lambda x, *p: np.ones_like(x) * sigma,
         derivatives=(d_model_da, d_model_db),
         logL=logL,
         dlogL_dp=gauss_grad,
@@ -293,20 +299,20 @@ def main():
     test_levenberg()
 
     print()
-    # pretty_print_title("Now testing random number generation")
-    # test_random_generator()
+    pretty_print_title("Now testing random number generation")
+    test_random_generator()
 
     print()
-    # pretty_print_title("Now testing mutli-dimensional rng")
-    # test_rng_multidim()
+    pretty_print_title("Now testing mutli-dimensional rng")
+    test_rng_multidim()
 
     print()
-    # pretty_print_title("Now testing integration")
-    # test_integration()
+    pretty_print_title("Now testing integration")
+    test_integration()
 
     # print()
-    # pretty_print_title("Now testing polynomial speed")
-    # test_polynomial_speed()
+    pretty_print_title("Now testing polynomial speed")
+    test_polynomial_speed()
 
 
 if __name__ in ("__main__"):
