@@ -161,17 +161,17 @@ def golden_section_gpt(func, a, b, args=(), atol=1e-3, rtol=1e-3, max_iters=100)
 
 
 def levenberg_marquardt(
-    data,
-    model,
-    sigma,
-    derivatives,
-    logL,
-    dlogL_dp,
-    p0,
-    step=1e-3,
-    weight=10,
-    max_iters=100,
-    atol=0.01,
+        data: np.ndarray,
+        model: callable,
+        sigma: callable,
+        derivatives: tuple,
+        logL: callable,
+        dlogL_dp: callable,
+        p0: np.ndarray,
+        step: float=1e-3,
+        weight: float=10,
+        max_iters: int=100,
+        atol: float=0.01,
 ):
     """
     Levenberg-Marquardt routine to maximize a chi-squared problem.
@@ -183,7 +183,10 @@ def levenberg_marquardt(
     data : ndarray
         Array containing data of the problem. Must have shape (Npoints, Ndims)
     model : callable
-        Model function to fit to
+        Model function to fit to. Expected to have the following function call:
+            model(data, *params)
+    sigma : callable
+        Model variances. Expects same function call as model
     derivatives : tuple
         tuple of callables. Derivatives of the model to each of its parameters
         Expects derivatives[i] to correspond to p0[i]
@@ -221,13 +224,20 @@ def levenberg_marquardt(
     y = data[:, 1]
 
     # Pre-calculate
-    sigma_inv = 1 / sigma
     weight_inv = 1 / weight
-
+    
+    # Standard deviation of model under consideration
+    sm = sigma(x, *p)
+    
     # Previous logL to compare to
-    logL_prev = logL(data, model, sigma, p)
+    logL_prev = logL(data, model, sm, p)
 
     for _ in range(max_iters):
+
+        # Standard deviation of model under consideration
+        sm = sigma(x, *p)
+        sigma_inv = 1/sm
+
         # Abort if step becomes too large
         if step > 1e10:
             print("Step too large, terminating")
@@ -242,7 +252,7 @@ def levenberg_marquardt(
 
         # Pseudo-hessian
         alpha = J.T @ J
-        beta = -0.5 * dlogL_dp(data, model, sigma, derivatives, p)
+        beta = -0.5 * dlogL_dp(data, model, sm, derivatives, p)
 
         # Step between steepest and Newton
         # Use diag(diag(alpha)) because diag(alpha) --> 1D array, diag(1D) --> square matrix with 1D on diagonal
@@ -253,7 +263,7 @@ def levenberg_marquardt(
         # dp = np.linalg.solve(alpha_prime, beta)
         p_new = p + dp
 
-        logL_new = logL(data, model, sigma, p_new)
+        logL_new = logL(data, model, sm, p_new)
 
         # New parameters are worse, do not accept
         if logL_new >= logL_prev:
