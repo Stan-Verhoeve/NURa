@@ -1,4 +1,6 @@
+import numpy as np
 from .sorting import merge_sort
+from .linalg import solve_system
 
 # Golden ratio to 12 decimals
 PHI = 1.618_033_988_749
@@ -156,3 +158,113 @@ def golden_section_gpt(func, a, b, args=(), atol=1e-3, rtol=1e-3, max_iters=100)
                 c = d
             else:
                 a = d
+
+def levenberg_marquardt(data,
+                        model,
+                        sigma,
+                        derivatives,
+                        logL,
+                        dlogL_dp,
+                        p0,
+                        step=1e-3,
+                        weight=10,
+                        max_iters=100,
+                        atol=0.01):
+    """
+    Levenberg-Marquardt routine to maximize a chi-squared problem.
+    NOTE: ALWAYS assumes chi-squared / least squared. This method
+          assumes a minimization of squared residuals
+
+    Parameters
+    ----------
+    data : ndarray
+        Array containing data of the problem. Must have shape (Npoints, Ndims)
+    model : callable
+        Model function to fit to
+    derivatives : tuple
+        tuple of callables. Derivatives of the model to each of its parameters
+        Expects derivatives[i] to correspond to p0[i]
+    logL : callable
+        log-likelihood function to maximize. Expects the following call structure:
+            logL(data, model, sigma, params)
+    dlogL_dp : callable
+        Derivative of log-likelihood function to each of its parameters.
+        Expectes the following call structure:
+            dlogL_dp(data, model, sigma, params)
+    p0 : array_like
+        Initial guess for fit parameters. Expected to have same shape
+        as derivatives. Expects p[i] to correspond to derivatives[i]
+    step : float, optional
+        Initial step lambda. The default is 1e-3
+    weight : float, optional
+        Weighing / damping of the steps. The default is 10
+    max_iters : int, optional
+        Maximum number of iterations before returning current best fit.
+        The default is 100
+    atol : float, optional
+        Tolerance in logL improvement before returning parameters.
+        The default is 0.01
+
+    Returns
+    -------
+    p : array_like
+        Best-fitting parameters. Has same shape as p0
+    """
+    # Current best guess
+    p = np.array(p0)
+
+    # Data
+    x = data[:,0]
+    y = data[:,1]
+    
+    # Pre-calculate
+    sigma_inv = 1/sigma
+    weight_inv = 1/weight
+    
+    # Previous logL to compare to
+    logL_prev = logL(data, model, sigma, p)
+
+    for _ in range(max_iters):
+        # Abort if step becomes too large
+        if step > 1e10:
+            print("Step too large, terminating")
+            return p
+
+        # Current function value
+        f = model(x, *p)
+        
+        # Jacobian matrix
+        J = [df(x, *p) * sigma_inv for df in derivatives]
+        J = np.stack(J, axis=1)
+        
+        # Pseudo-hessian
+        alpha = (J.T @ J)
+        beta = -0.5 * dlogL_dp(data, model, sigma, derivatives, p)
+
+        # Step between steepest and Newton
+        # Use diag(diag(alpha)) because diag(alpha) --> 1D array, diag(1D) --> square matrix with 1D on diagonal
+        alpha_prime = alpha + step * np.diag(np.diag(alpha))
+
+        # Solve for dp
+        dp = solve_system(alpha_prime, beta)
+        # dp = np.linalg.solve(alpha_prime, beta)
+        p_new = p + dp
+        
+        logL_new = logL(data, model, sigma, p_new)
+
+        # New parameters are worse, do not accept
+        if logL_new >= logL_prev:
+            step *= weight
+        else:
+            # New parameters are better, accept
+            p = p_new
+            step *= weight_inv
+            
+            # Return if no improvement
+            if abs(logL_prev - logL_new) < atol:
+                return p_new
+
+            # Update old value
+            logL_prev = logL_new
+    print("Max iters reached")
+    return p
