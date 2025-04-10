@@ -159,17 +159,20 @@ def golden_section_gpt(func, a, b, args=(), atol=1e-3, rtol=1e-3, max_iters=100)
             else:
                 a = d
 
-def levenberg_marquardt(data,
-                        model,
-                        sigma,
-                        derivatives,
-                        logL,
-                        dlogL_dp,
-                        p0,
-                        step=1e-3,
-                        weight=10,
-                        max_iters=100,
-                        atol=0.01):
+
+def levenberg_marquardt(
+    data,
+    model,
+    sigma,
+    derivatives,
+    logL,
+    dlogL_dp,
+    p0,
+    step=1e-3,
+    weight=10,
+    max_iters=100,
+    atol=0.01,
+):
     """
     Levenberg-Marquardt routine to maximize a chi-squared problem.
     NOTE: ALWAYS assumes chi-squared / least squared. This method
@@ -214,13 +217,13 @@ def levenberg_marquardt(data,
     p = np.array(p0)
 
     # Data
-    x = data[:,0]
-    y = data[:,1]
-    
+    x = data[:, 0]
+    y = data[:, 1]
+
     # Pre-calculate
-    sigma_inv = 1/sigma
-    weight_inv = 1/weight
-    
+    sigma_inv = 1 / sigma
+    weight_inv = 1 / weight
+
     # Previous logL to compare to
     logL_prev = logL(data, model, sigma, p)
 
@@ -232,13 +235,13 @@ def levenberg_marquardt(data,
 
         # Current function value
         f = model(x, *p)
-        
+
         # Jacobian matrix
         J = [df(x, *p) * sigma_inv for df in derivatives]
         J = np.stack(J, axis=1)
-        
+
         # Pseudo-hessian
-        alpha = (J.T @ J)
+        alpha = J.T @ J
         beta = -0.5 * dlogL_dp(data, model, sigma, derivatives, p)
 
         # Step between steepest and Newton
@@ -249,7 +252,7 @@ def levenberg_marquardt(data,
         dp = solve_system(alpha_prime, beta)
         # dp = np.linalg.solve(alpha_prime, beta)
         p_new = p + dp
-        
+
         logL_new = logL(data, model, sigma, p_new)
 
         # New parameters are worse, do not accept
@@ -259,7 +262,7 @@ def levenberg_marquardt(data,
             # New parameters are better, accept
             p = p_new
             step *= weight_inv
-            
+
             # Return if no improvement
             if abs(logL_prev - logL_new) < atol:
                 return p_new

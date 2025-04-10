@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import copy
 
+
 class LU_decomposition:
     def __init__(self, matrix: np.ndarray) -> None:
         """
@@ -106,6 +107,7 @@ class LU_decomposition:
         # If square, there is 1 unique element in the set
         return len(set(np.shape(matrix))) == 1
 
+
 def forward_backward_substitution(LU, b):
     """
     Perform both forward and backward substitution using a combined LU matrix.
@@ -124,11 +126,12 @@ def forward_backward_substitution(LU, b):
 
     # Perform backward substitution to solve Ux = z
     x = np.zeros(N)
-    for i in range(N-1, -1, -1):
+    for i in range(N - 1, -1, -1):
         # Calculate x[i] using the upper triangular part of LU
-        x[i] = (z[i] - np.dot(LU[i, i+1:], x[i+1:])) / LU[i, i]
+        x[i] = (z[i] - np.dot(LU[i, i + 1 :], x[i + 1 :])) / LU[i, i]
 
     return x
+
 
 def solve_system(M: np.ndarray, y: np.ndarray, Niters: int = None) -> np.ndarray:
     """
@@ -170,4 +173,3 @@ def solve_system(M: np.ndarray, y: np.ndarray, Niters: int = None) -> np.ndarray
             x -= dx
 
     return x
-

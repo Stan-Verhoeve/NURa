@@ -84,26 +84,27 @@ def test_find_min():
     plt.scatter(minimum, func(minimum), c="r", label="Found using golden_section")
     plt.savefig("figures/tests/minimum.png", dpi=600)
 
+
 def test_levenberg():
     from helperscripts.optimize import levenberg_marquardt
     import numpy as np
-    
+
     xdata = np.linspace(1e-3, 5, 10)
     xplot = np.linspace(1e-3, 5, 1000)
-    
+
     ## True model ##
     def model(x, a, b):
-        return (a/x)**2 * np.exp(-b/x)
-    
+        return (a / x) ** 2 * np.exp(-b / x)
+
     ## Derivatives ##
     def d_model_da(x, a, b):
-        return 2 * a/x ** 2 * np.exp(-b/x)
-    
+        return 2 * a / x**2 * np.exp(-b / x)
+
     def d_model_db(x, a, b):
-        return -1/x * np.exp(-b/x) * (a/x)**2
-    
+        return -1 / x * np.exp(-b / x) * (a / x) ** 2
+
     def gauss_grad(data, model, sigma, derivatives, p):
-        x, y = data[:,0], data[:,1]
+        x, y = data[:, 0], data[:, 1]
         f = model(x, *p)
 
         # Jacobian
@@ -112,13 +113,13 @@ def test_levenberg():
         res = (y - f) / sigma**2
 
         return -2 * J.T @ res
-    
+
     def logL(data, model, sigma, p):
-        x, y = data[:,0], data[:,1]
+        x, y = data[:, 0], data[:, 1]
         res = y - model(x, *p)
         return np.sum(res**2 / sigma**2)
 
-    p_true = [2,1]
+    p_true = [2, 1]
 
     # Noisy data
     sigma = 0.1
@@ -127,30 +128,34 @@ def test_levenberg():
     data = np.stack([xdata, y_noisy], axis=1)
 
     ## Levenberg-Marquardt fitting procedure ##
-    params = levenberg_marquardt(data=data,
-                                 model=model,
-                                 sigma=sigma,
-                                 derivatives=(d_model_da, d_model_db),
-                                 logL=logL,
-                                 dlogL_dp=gauss_grad,
-                                 p0=(1,1),
-                                 step=1e-3,
-                                 weight=10,
-                                 max_iters=10000,
-                                 atol=0.01)
+    params = levenberg_marquardt(
+        data=data,
+        model=model,
+        sigma=sigma,
+        derivatives=(d_model_da, d_model_db),
+        logL=logL,
+        dlogL_dp=gauss_grad,
+        p0=(1, 1),
+        step=1e-3,
+        weight=10,
+        max_iters=10000,
+        atol=0.01,
+    )
 
     print(f"Best params: {params}")
     print(f"True params: {p_true}")
     import matplotlib.pyplot as plt
+
     plt.figure()
     plt.scatter(*data.T, c="k", label="Noisy data")
     plt.plot(xplot, model(xplot, *p_true), c="r", label="True model")
     plt.plot(xplot, model(xplot, *params), c="blue", ls="--", label="Best fit")
-    
+
     plt.xlabel("x")
     plt.ylabel("y")
     plt.legend()
     plt.savefig("figures/tests/levenberg.png", bbox_inches="tight", dpi=600)
+
 
 def test_random_generator():
     """
@@ -282,7 +287,7 @@ def main():
     print()
     pretty_print_title("Now testing minimization")
     test_find_min()
-    
+
     print()
     pretty_print_title("Now testing Levenberg")
     test_levenberg()
