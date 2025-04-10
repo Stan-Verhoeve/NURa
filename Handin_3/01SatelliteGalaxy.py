@@ -70,6 +70,7 @@ def dn_dx(x: np.ndarray, A: float, Nsat: float, a: float, b: float, c: float):
 def main():
     from helperscripts.integrate import romberg
     from helperscripts.optimize import golden_section, levenberg_marquardt
+    from helperscripts.likelihoods import gaussian_logL, gaussian_logL_gradient
     from helperscripts.io import readfile
     import matplotlib.pyplot as plt
 
@@ -120,51 +121,13 @@ def main():
         # Normalised histogram
         hist = np.histogram(radius, bins=edges)[0]
         hist_scaled = hist / np.diff(edges) / nhalo
-
+        
         # Averagey galaxies per halo
         Ntest = len(radius) / nhalo
 
         #######################
         ## Levenberg fitting ##
         #######################
-
-        # TODO: Move these functions to helperscripts?
-
-        # Gradient wrt model parameters for Gaussian errors
-        def gauss_grad(data, model, sigma, derivatives, p):
-            x, y = data[:, 0], data[:, 1]
-            f = model(x, *p)
-
-            # Jacobian
-            J = [df(x, *p) for df in derivatives]
-            J = np.stack(J, axis=1)
-            res = (y - f) / sigma**2
-
-            return -2 * J.T @ res
-
-        # Gradient wrt model parameters for Poissonian errors
-        def poiss_grad(data, model, sigma, derivatives, p):
-            x, y = data[:, 0], data[:, 1]
-            f = model(x, *p)
-            print(f)
-            print(p)
-            # Jacobian
-            J = [df(x, *p) for df in derivatives]
-            J = np.stack(J, axis=1)
-            res = y / f - 1
-            return J.T @ res
-
-        # logL for Gaussian errors (chiSquared)
-        def logL(data, model, sigma, p):
-            x, y = data[:, 0], data[:, 1]
-            res = (y - model(x, *p)) / sigma
-            return np.sum(res**2)
-
-        # logL for Poissonian errors
-        def logL_poisson(data, model, sigma, p):
-            x, y = data[:, 0], data[:, 1]
-            y_model = model(x, *p)
-            return np.sum(y * np.log(y_model + 1e-10) - y_model)
 
         ##########################################
         ## Model and derivatives wrt parameters ##
@@ -173,6 +136,24 @@ def main():
 
         def model(x, a, b, c):
             return 4 * np.pi * x**2 * n(x, 1, Ntest, a, b, c)
+        
+        from helperscripts.integrate import romberg
+        def binned_model(x, a, b, c):
+            # A_inv = romberg(model, (1e-4, 5), m=10, args=(a,b,c))
+            
+            result = np.zeros_like(x)
+            diffs = np.diff(edges)
+            for i in range(len(edges)-1):
+                result[i] = romberg(model, (edges[i], edges[i+1]), m=10, args=(a,b,c))
+            
+            # return np.sum(result) * result / diffs / A_inv
+            return result / diffs
+
+        def sigma(x, a, b, c):
+            return np.sqrt(binned_model(x, a, b, c))
+        
+        def sigma_const(x, a, b, c):
+            return np.sqrt(Ntest) * np.ones_like(x)
 
         def dn_da(x, a, b, c):
             return model(x, a, b, c) * np.log(x / b)
@@ -188,25 +169,42 @@ def main():
         data = np.stack([centers, hist_scaled], axis=1)
 
         # Levenberg-Marquardt fitting procedure
+
+        # Variances based on current model params
+        # TODO: Is this correct?? 
         params = levenberg_marquardt(
             data=data,
-            model=model,
-            sigma=np.sqrt(Ntest),
+            model=binned_model,
+            sigma=sigma, # np.sqrt(Ntest),
             derivatives=(dn_da, dn_db, dn_dc),
-            logL=logL,
-            dlogL_dp=gauss_grad,
+            logL=gaussian_logL,
+            dlogL_dp=gaussian_logL_gradient,
             p0=p0,
             step=1e-2,
             weight=20,
             max_iters=300,
             atol=0.01,
         )
-
+        
+        # Constant variances
+        params_const = levenberg_marquardt(
+            data=data,
+            model=binned_model,
+            sigma=sigma_const, # np.sqrt(Ntest),
+            derivatives=(dn_da, dn_db, dn_dc),
+            logL=gaussian_logL,
+            dlogL_dp=gaussian_logL_gradient,
+            p0=p0,
+            step=1e-2,
+            weight=20,
+            max_iters=300,
+            atol=0.01,
+        )
         # TODO: Currently compares to curve_fit
         #       Keep in as comparison? Or remove later?
         from scipy.optimize import curve_fit
 
-        popt, pcov = curve_fit(model, data[:, 0], data[:, 1], p0)
+        popt, pcov = curve_fit(model, data[:, 0], data[:, 1], p0, sigma=np.sqrt(Ntest))
 
         print("    Best fitting parameters using Levenberg-Marquardt")
         print(f"        a={params[0]}")
@@ -220,7 +218,7 @@ def main():
         row = i // 2
         col = i % 2
         axs[row, col].set(
-            title=rf"$M_h \approx 10^{{{11+i}}} M_{{\odot}}/h$",
+            title=fr"$M_h \approx 10^{{{11+i}}} M_{{\odot}}/h$",
             xlabel="x",
             ylabel=r"N/$\langle N_\text{sat}\rangle$",
             xscale="log",
@@ -229,15 +227,14 @@ def main():
             ylim=(1e-3, 2 * max(hist_scaled)),
         )
 
-        axs[row, col].stairs(hist_scaled, edges=edges)
+        axs[row, col].stairs(hist_scaled, edges=edges, label="Binned data")
         axs[row, col].plot(
-            xx, model(xx, *params), c="r", label="Levenberg-Marquardt"
+            xx, model(xx, *popt), lw=5, c="gray", alpha=0.5, label="Best-fit profile (scipy curve_fit)"
         )
-        axs[row, col].plot(
-            xx, model(xx, *popt), c="k", ls="--", label="scipy curve_fit"
-        )
-
-    axs[0, 0].legend()
+        axs[row, col].stairs(binned_model(centers, *params), edges=edges, ec="k", label="Best-fit profile \n(Levenberg-Marquardt, non-constant $\\sigma$)")
+        axs[row, col].stairs(binned_model(centers, *params_const), edges=edges, ec="r", label="Best-fit profile \n(Levenberg-Marquardt, consant $\\sigma$)")
+    handles,labels = axs[2,0].get_legend_handles_labels()
+    plt.figlegend(handles, labels, loc=(0.6,0.15))
     axs[2, 1].set_visible(False)
 
     fig.tight_layout()
