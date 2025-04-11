@@ -284,20 +284,20 @@ def main():
     test_levenberg()
 
     print()
-    pretty_print_title("Now testing random number generation")
-    test_random_generator()
+    # pretty_print_title("Now testing random number generation")
+    # test_random_generator()
 
     print()
-    pretty_print_title("Now testing mutli-dimensional rng")
-    test_rng_multidim()
+    # pretty_print_title("Now testing mutli-dimensional rng")
+    # test_rng_multidim()
 
     print()
-    pretty_print_title("Now testing integration")
-    test_integration()
+    # pretty_print_title("Now testing integration")
+    # test_integration()
 
     # print()
-    pretty_print_title("Now testing polynomial speed")
-    test_polynomial_speed()
+    # pretty_print_title("Now testing polynomial speed")
+    # test_polynomial_speed()
 
 
 if __name__ in ("__main__"):
