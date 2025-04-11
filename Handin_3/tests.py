@@ -93,6 +93,7 @@ def test_find_min():
 
 def test_levenberg():
     from helperscripts.optimize import levenberg_marquardt
+    from helperscripts.likelihoods import gaussian_logL, gaussian_logL_gradient
     import numpy as np
 
     xdata = np.linspace(1e-3, 5, 50)
@@ -109,22 +110,6 @@ def test_levenberg():
     def d_model_db(x, a, b):
         return -1 / x * np.exp(-b / x) * (a / x) ** 2
 
-    def gauss_grad(data, model, sigma, derivatives, p):
-        x, y = data[:, 0], data[:, 1]
-        f = model(x, *p)
-
-        # Jacobian
-        J = [df(x, *p) for df in derivatives]
-        J = np.stack(J, axis=1)
-        res = (y - f) / sigma**2
-
-        return -2 * J.T @ res
-
-    def logL(data, model, sigma, p):
-        x, y = data[:, 0], data[:, 1]
-        res = y - model(x, *p)
-        return np.sum(res**2 / sigma**2)
-
     p_true = [2, 1]
 
     # Noisy data
@@ -139,8 +124,8 @@ def test_levenberg():
         model=model,
         sigma=lambda x, *p: np.ones_like(x) * sigma,
         derivatives=(d_model_da, d_model_db),
-        logL=logL,
-        dlogL_dp=gauss_grad,
+        logL=gaussian_logL,
+        dlogL_dp=gaussian_logL_gradient,
         p0=(1, 1),
         step=1e-3,
         weight=10,
