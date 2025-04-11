@@ -28,8 +28,17 @@ def gaussian_logL(data, model, sigma, p):
     float
         log-likelihood assuming Gaussian errors
     """
+    
+    # Prior
+    # TODO: make prior function argument?
+    if p[1] < 0 or p[1] > 5:
+        return np.inf
+    if p[0] > 10 or p[0] < 0:
+        return np.inf
     x, y = data[:, 0], data[:, 1]
-    res = (y - model(x, *p)) / sigma
+    f = model(x, *p)
+
+    res = (y - f) / sigma
     return np.sum(res**2)
 
 
@@ -60,13 +69,12 @@ def gaussian_logL_gradient(data, model, sigma, derivatives, p):
         log-likelihood gradient assuming Gaussian errors
     """
     x, y = data[:, 0], data[:, 1]
+    
     f = model(x, *p)
-
     # Jacobian
     J = [df(x, *p) for df in derivatives]
     J = np.stack(J, axis=1)
     res = (y - f) / sigma**2
-
     return -2 * J.T @ res
 
 
