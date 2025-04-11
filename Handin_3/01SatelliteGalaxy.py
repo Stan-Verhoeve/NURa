@@ -103,7 +103,9 @@ def main():
     ###########################
     ## Q1b: Gaussian fitting ##
     ###########################
+    import time
 
+    startTime = time.time()
     # Create figure
     fig, axs = plt.subplots(3, 2, figsize=(1.5 * 6.4, 1.5 * 8.0))
 
@@ -120,10 +122,12 @@ def main():
 
         # Normalised histogram
         hist = np.histogram(radius, bins=edges)[0]
-        hist_scaled = hist / np.diff(edges) / nhalo
+        # hist_scaled = hist / np.diff(edges) / nhalo
+        hist_scaled = hist # / nhalo / np.diff(edges)
+        # hist_scaled = np.copy(hist)
 
         # Averagey galaxies per halo
-        Ntest = len(radius) / nhalo
+        Nsat = len(radius) / nhalo
 
         #######################
         ## Levenberg fitting ##
@@ -133,44 +137,105 @@ def main():
         ## Model and derivatives wrt parameters ##
         ##########################################
         # TODO: See if possible to move to helperscript?
-
-        def model(x, a, b, c):
-            return 4 * np.pi * x**2 * n(x, 1, Ntest, a, b, c)
+        # TODO: Highly, highly inefficient, due to (re)calculating
+        #       Z and dZ three times (once for each fit param), even
+        #       though Z and dZ do not change per fit iteration. So
+        #       large improvement to be made here
 
         from helperscripts.integrate import romberg
 
-        def binned_model(x, a, b, c):
-            # A_inv = romberg(model, (1e-4, 5), m=10, args=(a,b,c))
+        def func2norm(x, a, b, c, Nsat):
+            return 4 * np.pi * Nsat * x**(a-1) * b**(3-a)*np.exp(-((x/b)**c))
+        
+        def partition(a, b, c):
+            func = lambda x: func2norm(x, a, b, c, 1)
+            return romberg(func, (1e-4, 5), m=10)
 
-            result = np.zeros_like(x)
-            diffs = np.diff(edges)
-            for i in range(len(edges) - 1):
-                result[i] = romberg(
-                    model, (edges[i], edges[i + 1]), m=10, args=(a, b, c)
-                )
+        def model(x, a, b, c):
+            return func2norm(x, a, b, c, Nsat) / partition(a, b, c)
+        
+        def df_da(x, a, b, c):
+            return func2norm(x, a, b, c, Nsat) * np.log(x/b)
 
-            # return np.sum(result) * result / diffs / A_inv
-            return result / diffs
+        def df_db(x, a, b, c):
+            return func2norm(x, a, b, c, Nsat) * (c * (x/b)**c - (a-3))/b
 
-        def sigma(x, a, b, c):
-            return np.sqrt(binned_model(x, a, b, c))
+        def df_dc(x, a, b, c):
+            return func2norm(x, a, b, c, Nsat) * np.log(x/b) * (x/b)**c
 
-        def sigma_const(x, a, b, c):
-            return np.sqrt(Ntest) * np.ones_like(x)
+        def dpart_dparam(func):
+            return romberg(func, (1e-4, 5), m=10)
 
         def dn_da(x, a, b, c):
-            return binned_model(x, a, b, c) * np.log(x / b)
+            derivative = lambda x: df_da(x, a, b, c)
+            Z = partition(a, b, c)
+            dZ = dpart_dparam(derivative)
+
+            return -1/Z**2 * func2norm(x, a, b, c, Nsat) * dZ + 1/Z * derivative(x)
 
         def dn_db(x, a, b, c):
-            return binned_model(x, a, b, c) * (c * (x / b) ** c - (a - 3)) / b
+            derivative = lambda x: df_db(x, a, b, c)
+            Z = partition(a, b, c)
+            dZ = dpart_dparam(derivative)
 
+            return -1/Z**2 * func2norm(x, a, b, c, Nsat) * dZ + 1/Z * derivative(x)
+        
         def dn_dc(x, a, b, c):
-            return -binned_model(x, a, b, c) * np.log(x / b) * (x / b) ** c
+            derivative = lambda x: df_dc(x, a, b, c)
+            Z = partition(a, b, c)
+            dZ = dpart_dparam(derivative)
 
+            return -1/Z**2 * func2norm(x, a, b, c, Nsat) * dZ + 1/Z * derivative(x)
+
+        def dn_da_binned(x, a, b, c):
+            result = np.zeros_like(x)
+            
+            for i in range(len(x)):
+                result[i] = romberg(dn_da, (edges[i], edges[i+1]), m=10, args=(a, b, c))
+            return result * nhalo
+
+        def dn_db_binned(x, a, b, c):
+            result = np.zeros_like(x)
+            
+            for i in range(len(x)):
+                result[i] = romberg(dn_db, (edges[i], edges[i+1]), m=10, args=(a, b, c))
+            return result * nhalo
+        
+        def dn_dc_binned(x, a, b, c):
+            result = np.zeros_like(x)
+            
+            for i in range(len(x)):
+                result[i] = romberg(dn_dc, (edges[i], edges[i+1]), m=10, args=(a, b, c))
+            return result * nhalo
+        
+        def binned_model(x, a, b, c):
+            result = np.zeros_like(x)
+            for i in range(len(edges)-1):
+                result[i] = romberg(model, (edges[i], edges[i+1]), m=10, args=(a, b, c))
+            
+            return result * nhalo  # * Ntest # / np.sum(result)
+        
+        # TODO: What to do with sigma if zero?
+        def sigma(x, a, b, c):
+            o = np.sqrt(binned_model(x, a, b, c))
+            o[o <= 0] = 1
+            return o
+        
+        def sigma_const(x, A, a, b, c):
+            return np.sqrt(Nsat) * np.ones_like(x)
+        
+        
+        # Derivative tuple
+        derivatives = (dn_da_binned, dn_db_binned, dn_dc_binned)
+       
         # Initial guess and data matrix
-        p0 = [1.5, 0.5, 1.5]
+        p0 = [2., 1., 3.]
+        lucas = np.array([[1.30767685, 1.11882273, 3.15335137],
+                   [1.5918548, 0.91906036, 3.47614821],
+                   [1.48406971, 0.80283839, 2.87626552],
+                   [1.94381939, 0.60776245, 2.50984679],
+                   [1.99410978, 0.70836665, 2.04264211]])
         data = np.stack([centers, hist_scaled], axis=1)
-
         # Levenberg-Marquardt fitting procedure
 
         # Variances based on current model params
@@ -179,36 +244,36 @@ def main():
             data=data,
             model=binned_model,
             sigma=sigma,  # np.sqrt(Ntest),
-            derivatives=(dn_da, dn_db, dn_dc),
+            derivatives=derivatives,
             logL=gaussian_logL,
             dlogL_dp=gaussian_logL_gradient,
             p0=p0,
-            step=1e-2,
-            weight=20,
-            max_iters=300,
+            step=1e-3,
+            weight=10,
+            max_iters=100,
             atol=0.01,
         )
 
         # Constant variances
-        params_const = levenberg_marquardt(
-            data=data,
-            model=binned_model,
-            sigma=sigma_const,  # np.sqrt(Ntest),
-            derivatives=(dn_da, dn_db, dn_dc),
-            logL=gaussian_logL,
-            dlogL_dp=gaussian_logL_gradient,
-            p0=p0,
-            step=1e-2,
-            weight=20,
-            max_iters=300,
-            atol=0.01,
-        )
+        # params_const = levenberg_marquardt(
+        #     data=data,
+        #     model=binned_model,
+        #     sigma=sigma_const,  # np.sqrt(Ntest),
+        #     derivatives=(dn_da, dn_db, dn_dc),
+        #     logL=gaussian_logL,
+        #     dlogL_dp=gaussian_logL_gradient,
+        #     p0=p0,
+        #     step=1e-2,
+        #     weight=20,
+        #     max_iters=300,
+        #     atol=0.01,
+        # )
         # TODO: Currently compares to curve_fit
         #       Keep in as comparison? Or remove later?
         from scipy.optimize import curve_fit
 
         popt, pcov = curve_fit(
-            binned_model, data[:, 0], data[:, 1], p0, sigma=np.sqrt(Ntest)
+            binned_model, data[:, 0], data[:, 1], p0, sigma=np.sqrt(Nsat)
         )
 
         print("    Best fitting parameters using Levenberg-Marquardt")
@@ -229,12 +294,15 @@ def main():
             xscale="log",
             yscale="log",
             xlim=(1e-4, 5),
-            ylim=(1e-3, 2 * max(hist_scaled)),
+            ylim=(1e-3, 2 * max(hist_scaled)), # / np.diff(edges))),
         )
 
-        axs[row, col].stairs(hist_scaled, edges=edges, label="Binned data")
+
+        # axs[row, col].stairs(binned_model(centers, *lucas[i]) / np.diff(edges), edges=edges, ec="green", label="lucas")
+        axs[row, col].stairs(hist_scaled, # / np.diff(edges), 
+                             edges=edges, label="Binned data")
         axs[row, col].stairs(
-            binned_model(centers, *popt),
+            binned_model(centers, *popt), # / np.diff(edges),
             edges=edges,
             lw=5,
             ec="gray",
@@ -242,24 +310,27 @@ def main():
             label="Best-fit profile (scipy curve_fit)",
         )
         axs[row, col].stairs(
-            binned_model(centers, *params),
+            binned_model(centers, *params), # / np.diff(edges),
             edges=edges,
             ec="k",
             label="Best-fit profile \n(Levenberg-Marquardt, non-constant $\\sigma$)",
         )
-        axs[row, col].stairs(
-            binned_model(centers, *params_const),
-            edges=edges,
-            ec="r",
-            label="Best-fit profile \n(Levenberg-Marquardt, consant $\\sigma$)",
-        )
+        # axs[row, col].stairs(
+        #     binned_model(centers, *params_const) / np.diff(edges),
+        #     edges=edges,
+        #     ec="r",
+        #     label="Best-fit profile \n(Levenberg-Marquardt, consant $\\sigma$)",
+        # )
     handles, labels = axs[2, 0].get_legend_handles_labels()
     plt.figlegend(handles, labels, loc=(0.6, 0.15))
     axs[2, 1].set_visible(False)
 
     fig.tight_layout()
     fig.savefig(f"figures/subplots_fitted", bbox_inches="tight", dpi=600)
-
+    stopTime = time.time()
+    
+    totalTime = stopTime - startTime
+    print(f"That took {totalTime} seconds, or {totalTime / 60} minutes")
 
 if __name__ in ("__main__"):
     main()
