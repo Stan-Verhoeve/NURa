@@ -123,7 +123,7 @@ def main():
         # Normalised histogram
         hist = np.histogram(radius, bins=edges)[0]
         # hist_scaled = hist / np.diff(edges) / nhalo
-        hist_scaled = hist # / nhalo / np.diff(edges)
+        hist_scaled = hist  # / nhalo / np.diff(edges)
         # hist_scaled = np.copy(hist)
 
         # Averagey galaxies per halo
@@ -145,23 +145,30 @@ def main():
         from helperscripts.integrate import romberg
 
         def func2norm(x, a, b, c, Nsat):
-            return 4 * np.pi * Nsat * x**(a-1) * b**(3-a)*np.exp(-((x/b)**c))
-        
+            return (
+                4
+                * np.pi
+                * Nsat
+                * x ** (a - 1)
+                * b ** (3 - a)
+                * np.exp(-((x / b) ** c))
+            )
+
         def partition(a, b, c):
             func = lambda x: func2norm(x, a, b, c, 1)
             return romberg(func, (1e-4, 5), m=10)
 
         def model(x, a, b, c):
             return func2norm(x, a, b, c, Nsat) / partition(a, b, c)
-        
+
         def df_da(x, a, b, c):
-            return func2norm(x, a, b, c, Nsat) * np.log(x/b)
+            return func2norm(x, a, b, c, Nsat) * np.log(x / b)
 
         def df_db(x, a, b, c):
-            return func2norm(x, a, b, c, Nsat) * (c * (x/b)**c - (a-3))/b
+            return func2norm(x, a, b, c, Nsat) * (c * (x / b) ** c - (a - 3)) / b
 
         def df_dc(x, a, b, c):
-            return func2norm(x, a, b, c, Nsat) * np.log(x/b) * (x/b)**c
+            return func2norm(x, a, b, c, Nsat) * np.log(x / b) * (x / b) ** c
 
         def dpart_dparam(func):
             return romberg(func, (1e-4, 5), m=10)
@@ -171,70 +178,87 @@ def main():
             Z = partition(a, b, c)
             dZ = dpart_dparam(derivative)
 
-            return -1/Z**2 * func2norm(x, a, b, c, Nsat) * dZ + 1/Z * derivative(x)
+            return -1 / Z**2 * func2norm(
+                x, a, b, c, Nsat
+            ) * dZ + 1 / Z * derivative(x)
 
         def dn_db(x, a, b, c):
             derivative = lambda x: df_db(x, a, b, c)
             Z = partition(a, b, c)
             dZ = dpart_dparam(derivative)
 
-            return -1/Z**2 * func2norm(x, a, b, c, Nsat) * dZ + 1/Z * derivative(x)
-        
+            return -1 / Z**2 * func2norm(
+                x, a, b, c, Nsat
+            ) * dZ + 1 / Z * derivative(x)
+
         def dn_dc(x, a, b, c):
             derivative = lambda x: df_dc(x, a, b, c)
             Z = partition(a, b, c)
             dZ = dpart_dparam(derivative)
 
-            return -1/Z**2 * func2norm(x, a, b, c, Nsat) * dZ + 1/Z * derivative(x)
+            return -1 / Z**2 * func2norm(
+                x, a, b, c, Nsat
+            ) * dZ + 1 / Z * derivative(x)
 
         def dn_da_binned(x, a, b, c):
             result = np.zeros_like(x)
-            
+
             for i in range(len(x)):
-                result[i] = romberg(dn_da, (edges[i], edges[i+1]), m=10, args=(a, b, c))
+                result[i] = romberg(
+                    dn_da, (edges[i], edges[i + 1]), m=10, args=(a, b, c)
+                )
             return result * nhalo
 
         def dn_db_binned(x, a, b, c):
             result = np.zeros_like(x)
-            
+
             for i in range(len(x)):
-                result[i] = romberg(dn_db, (edges[i], edges[i+1]), m=10, args=(a, b, c))
+                result[i] = romberg(
+                    dn_db, (edges[i], edges[i + 1]), m=10, args=(a, b, c)
+                )
             return result * nhalo
-        
+
         def dn_dc_binned(x, a, b, c):
             result = np.zeros_like(x)
-            
+
             for i in range(len(x)):
-                result[i] = romberg(dn_dc, (edges[i], edges[i+1]), m=10, args=(a, b, c))
+                result[i] = romberg(
+                    dn_dc, (edges[i], edges[i + 1]), m=10, args=(a, b, c)
+                )
             return result * nhalo
-        
+
         def binned_model(x, a, b, c):
             result = np.zeros_like(x)
-            for i in range(len(edges)-1):
-                result[i] = romberg(model, (edges[i], edges[i+1]), m=10, args=(a, b, c))
-            
+            for i in range(len(edges) - 1):
+                result[i] = romberg(
+                    model, (edges[i], edges[i + 1]), m=10, args=(a, b, c)
+                )
+
             return result * nhalo  # * Ntest # / np.sum(result)
-        
+
         # TODO: What to do with sigma if zero?
         def sigma(x, a, b, c):
             o = np.sqrt(binned_model(x, a, b, c))
             o[o <= 0] = 1
             return o
-        
+
         def sigma_const(x, A, a, b, c):
             return np.sqrt(Nsat) * np.ones_like(x)
-        
-        
+
         # Derivative tuple
         derivatives = (dn_da_binned, dn_db_binned, dn_dc_binned)
-       
+
         # Initial guess and data matrix
-        p0 = [2., 1., 3.]
-        lucas = np.array([[1.30767685, 1.11882273, 3.15335137],
-                   [1.5918548, 0.91906036, 3.47614821],
-                   [1.48406971, 0.80283839, 2.87626552],
-                   [1.94381939, 0.60776245, 2.50984679],
-                   [1.99410978, 0.70836665, 2.04264211]])
+        p0 = [2.0, 1.0, 3.0]
+        lucas = np.array(
+            [
+                [1.30767685, 1.11882273, 3.15335137],
+                [1.5918548, 0.91906036, 3.47614821],
+                [1.48406971, 0.80283839, 2.87626552],
+                [1.94381939, 0.60776245, 2.50984679],
+                [1.99410978, 0.70836665, 2.04264211],
+            ]
+        )
         data = np.stack([centers, hist_scaled], axis=1)
         # Levenberg-Marquardt fitting procedure
 
@@ -294,15 +318,15 @@ def main():
             xscale="log",
             yscale="log",
             xlim=(1e-4, 5),
-            ylim=(1e-3, 2 * max(hist_scaled)), # / np.diff(edges))),
+            ylim=(1e-3, 2 * max(hist_scaled)),  # / np.diff(edges))),
         )
 
-
         # axs[row, col].stairs(binned_model(centers, *lucas[i]) / np.diff(edges), edges=edges, ec="green", label="lucas")
-        axs[row, col].stairs(hist_scaled, # / np.diff(edges), 
-                             edges=edges, label="Binned data")
         axs[row, col].stairs(
-            binned_model(centers, *popt), # / np.diff(edges),
+            hist_scaled, edges=edges, label="Binned data"  # / np.diff(edges),
+        )
+        axs[row, col].stairs(
+            binned_model(centers, *popt),  # / np.diff(edges),
             edges=edges,
             lw=5,
             ec="gray",
@@ -310,7 +334,7 @@ def main():
             label="Best-fit profile (scipy curve_fit)",
         )
         axs[row, col].stairs(
-            binned_model(centers, *params), # / np.diff(edges),
+            binned_model(centers, *params),  # / np.diff(edges),
             edges=edges,
             ec="k",
             label="Best-fit profile \n(Levenberg-Marquardt, non-constant $\\sigma$)",
@@ -328,9 +352,10 @@ def main():
     fig.tight_layout()
     fig.savefig(f"figures/subplots_fitted", bbox_inches="tight", dpi=600)
     stopTime = time.time()
-    
+
     totalTime = stopTime - startTime
     print(f"That took {totalTime} seconds, or {totalTime / 60} minutes")
+
 
 if __name__ in ("__main__"):
     main()

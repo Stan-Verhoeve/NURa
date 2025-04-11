@@ -131,6 +131,7 @@ def golden_section(func, a, b, args=(), atol=1e-3, rtol=1e-3, max_iters=100):
 
     raise RuntimeError("Maximum iterations reached without finding a minimum")
 
+
 def levenberg_marquardt(
     data: np.ndarray,
     model: callable,
@@ -196,7 +197,7 @@ def levenberg_marquardt(
 
     # DoF == N_data - N_params
     DoF = len(x) - len(p)
-    DoF_inv = 1./DoF
+    DoF_inv = 1.0 / DoF
 
     # Pre-calculate
     weight_inv = 1 / weight
@@ -210,7 +211,7 @@ def levenberg_marquardt(
         # Standard deviation of model under consideration
         sm = sigma(x, *p)
         sigma_inv = 1 / sm
-        
+
         # TODO: Is this necessary?
         # Abort if step becomes too large
         if step > 1e10:
@@ -235,7 +236,7 @@ def levenberg_marquardt(
         # Solve for dp
         dp = solve_system(alpha_prime, beta)
         p_new = p + dp
-        
+
         # New log-likelihood
         logL_new = logL(data, model, sm, p_new)
         logL_diff = logL_new - logL_prev

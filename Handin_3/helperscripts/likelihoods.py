@@ -28,7 +28,7 @@ def gaussian_logL(data, model, sigma, p):
     float
         log-likelihood assuming Gaussian errors
     """
-    
+
     # Prior
     # TODO: make prior function argument?
     if p[1] < 0 or p[1] > 5:
@@ -69,7 +69,7 @@ def gaussian_logL_gradient(data, model, sigma, derivatives, p):
         log-likelihood gradient assuming Gaussian errors
     """
     x, y = data[:, 0], data[:, 1]
-    
+
     f = model(x, *p)
     # Jacobian
     J = [df(x, *p) for df in derivatives]
