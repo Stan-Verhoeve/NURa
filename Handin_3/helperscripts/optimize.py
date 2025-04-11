@@ -194,10 +194,12 @@ def levenberg_marquardt(
     x = data[:, 0]
     y = data[:, 1]
 
+    # DoF == N_data - N_params
+    DoF = len(x) - len(p)
+    DoF_inv = 1./DoF
+
     # Pre-calculate
     weight_inv = 1 / weight
-
-    # Standard deviation of model under consideration
     sm = sigma(x, *p)
 
     # Previous logL to compare to
@@ -208,7 +210,8 @@ def levenberg_marquardt(
         # Standard deviation of model under consideration
         sm = sigma(x, *p)
         sigma_inv = 1 / sm
-
+        
+        # TODO: Is this necessary?
         # Abort if step becomes too large
         if step > 1e10:
             print("Step too large, terminating")
@@ -231,24 +234,28 @@ def levenberg_marquardt(
 
         # Solve for dp
         dp = solve_system(alpha_prime, beta)
-        # dp = np.linalg.solve(alpha_prime, beta)
         p_new = p + dp
-
+        
+        # New log-likelihood
         logL_new = logL(data, model, sm, p_new)
+        logL_diff = logL_new - logL_prev
 
         # New parameters are worse, do not accept
-        if logL_new >= logL_prev:
+        # logL_new > logL_prev --> logL_new - logL_prev > 0
+        if logL_diff > 0:
             step *= weight
         else:
             # New parameters are better, accept
             p = p_new
             step *= weight_inv
 
-            # Return if no improvement
-            if abs(logL_prev - logL_new) < atol:
-                return p_new
-
             # Update old value
             logL_prev = logL_new
+
+        # Return early if (almost) no improvement
+        # Assumes atol to be in units of reduced chi-squared
+        if abs(logL_diff) * DoF_inv < atol:
+            return p
+
     print("Max iters reached")
     return p
