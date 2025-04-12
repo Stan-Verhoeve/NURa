@@ -140,6 +140,7 @@ def levenberg_marquardt(
     logL: callable,
     dlogL_dp: callable,
     p0: np.ndarray,
+    DoF: float = 1, 
     step: float = 1e-3,
     weight: float = 10,
     max_iters: int = 100,
@@ -153,7 +154,8 @@ def levenberg_marquardt(
     Parameters
     ----------
     data : ndarray
-        Array containing data of the problem. Must have shape (Npoints, Ndims)
+        Array containing data of the problem. Assumes data[0] to be the input vector,
+        and data[1] to be the output vector
     model : callable
         Model function to fit to. Expected to have the following function call:
             model(data, *params)
@@ -192,31 +194,21 @@ def levenberg_marquardt(
     p = np.array(p0)
 
     # Data
-    x = data[:, 0]
-    y = data[:, 1]
-
-    # DoF == N_data - N_params
-    DoF = len(x) - len(p)
-    DoF_inv = 1.0 / DoF
+    x = data[0]
+    y = data[1]
 
     # Pre-calculate
     weight_inv = 1 / weight
+    DoF_inv = 1 / DoF
     sm = sigma(x, *p)
 
     # Previous logL to compare to
     logL_prev = logL(data, model, sm, p)
-
+    
     for _ in range(max_iters):
-
         # Standard deviation of model under consideration
         sm = sigma(x, *p)
         sigma_inv = 1 / sm
-
-        # TODO: Is this necessary?
-        # Abort if step becomes too large
-        if step > 1e10:
-            print("Step too large, terminating")
-            return p
 
         # Current function value
         f = model(x, *p)
@@ -224,19 +216,19 @@ def levenberg_marquardt(
         # Jacobian matrix
         J = [df(x, *p) * sigma_inv for df in derivatives]
         J = np.stack(J, axis=1)
-
+        
         # Pseudo-hessian
         alpha = J.T @ J
         beta = -0.5 * dlogL_dp(data, model, sm, derivatives, p)
-
+        
         # Step between steepest and Newton
         # Use diag(diag(alpha)) because diag(alpha) --> 1D array, diag(1D) --> square matrix with 1D on diagonal
         alpha_prime = alpha + step * np.diag(np.diag(alpha))
-
+        
         # Solve for dp
         dp = solve_system(alpha_prime, beta)
         p_new = p + dp
-
+        
         # New log-likelihood
         logL_new = logL(data, model, sm, p_new)
         logL_diff = logL_new - logL_prev
@@ -244,7 +236,8 @@ def levenberg_marquardt(
         # New parameters are worse, do not accept
         # logL_new > logL_prev --> logL_new - logL_prev > 0
         if logL_diff > 0:
-            step *= weight
+            newstep = step * weight
+            step = min(newstep, 1e6)
         else:
             # New parameters are better, accept
             p = p_new
@@ -260,3 +253,39 @@ def levenberg_marquardt(
 
     print("Max iters reached")
     return p
+
+def quasi_newton(
+    data: np.ndarray,
+    model: callable,
+    sigma: callable,
+    derivatives: tuple,
+    logL: callable,
+    dlogL_dp: callable,
+    p0: np.ndarray,
+    step: float = 1e-3,
+    weight: float = 10,
+    max_iters: int = 100,
+    atol: float = 0.01,
+):
+    p = np.array(p0)
+    x = data[0]
+    y = data[1]
+
+    sm = sigma(x, *p)
+    H_inv = np.eye(len(p))
+    
+    logL_prev = logL(data, model, sm, p)
+    for _ in range(max_iters):
+        # Calculate gradient and step in direction
+        gradient = dlogL_dp(data, model, sm, derivatives, p)
+        step = H_inv @ gradient
+
+        # New parameters (assumes lambda=1)
+        p_new = p + step
+        logL_new = logL(data, model, sm, p_new)
+
+        # Check for convergence
+        if logL_prev - logL_new < atol:
+            return p_new
+
+        
