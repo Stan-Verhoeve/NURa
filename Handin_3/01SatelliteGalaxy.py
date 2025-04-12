@@ -1,78 +1,15 @@
-import numpy as np
-
-
-def n(
-    x: np.ndarray, A: float, Nsat: float, a: float, b: float, c: float
-) -> np.ndarray:
-    """
-    Number density profile of satellite galaxies
-
-    Parameters
-    ----------
-    x : float | ndarray
-        Radius in units of virial radius; x = r / r_virial
-    A : float
-        Normalisation
-    Nsat : float
-        Average number of satellites
-    a : float
-        Small-scale slope
-    b : float
-        Transition scale
-    c : float
-        Steepness of exponential drop-off
-
-    Returns
-    -------
-    float | ndarray
-        Same type and shape as x. Number density of satellite galaxies
-        at given radius x.
-    """
-    return A * Nsat * ((x / b) ** (a - 3)) * np.exp(-((x / b) ** c))
-
-
-def dn_dx(x: np.ndarray, A: float, Nsat: float, a: float, b: float, c: float):
-    """
-    Derivative of number density provide
-
-    Parameters
-    ----------
-    x : float | ndarray
-        Radius in units of virial radius; x = r / r_virial
-    A : float
-        Normalisation
-    Nsat : float
-        Average number of satellites
-    a : float
-        Small-scale slope
-    b : float
-        Transition scale
-    c : float
-        Steepness of exponential drop-off
-
-    Returns
-    -------
-    float | ndarray
-        Same type and shape as x. Derivative of number density of
-        satellite galaxies at given radius x.
-    """
-    return (
-        -A
-        * Nsat
-        * b**3
-        * (x / b) ** (a)
-        * (c * (x / b) ** c - a + 3)
-        * np.exp(-((x / b) ** c))
-        / x**4
-    )
-
-
 def main():
+    import numpy as np
     from helperscripts.integrate import romberg
     from helperscripts.optimize import golden_section, levenberg_marquardt
-    from helperscripts.likelihoods import gaussian_logL, gaussian_logL_gradient
+    from helperscripts.likelihoods import gaussian_logL, gaussian_logL_gradient, poissonian_logL, poissonian_logL_gradient
     from helperscripts.io import readfile
     import matplotlib.pyplot as plt
+    import time
+    
+    # Order of Romberg integration
+    ORDER = 4
+
 
     ##########################
     ## Q1a: finding maximum ##
@@ -83,27 +20,27 @@ def main():
     c = 1.6
     Nsat = 100
     A = 256 / (5 * np.pi**1.5)
-
-    # TODO: double-check bracket?
-    #       use other minimization routine?
-    bracket = (0.1, 0.2)
-
-    xx = np.linspace(1e-8, 5, 1000)
-
+    
     # Function to minimize. This is -x^2 n(x)
     # Move 4pi ou, and reintroduce it in the end result only
     func = lambda x, *args: -(x**2) * n(x, 1, 1, *args)
     N_of_x = lambda x, *args: 4 * np.pi * x**2 * n(x, A, Nsat, *args)
+    
+
+    # TODO: double-check bracket?
+    #       use other minimization routine?
+    #       Seems to be fine for now
+    bracket = (0.1, 0.2)
 
     # Find minimum of func (maximum of N(x))
     xmin = golden_section(func, *bracket, args=(a, b, c), atol=1e-8)
     print(f"Maximum found at x={xmin}")
     print(f"Function value at maximum: N(x) = {N_of_x(xmin, a, b, c)}")
 
+    
     ###########################
     ## Q1b: Gaussian fitting ##
     ###########################
-    import time
 
     startTime = time.time()
     # Create figure
@@ -120,11 +57,8 @@ def main():
         centers_log = 0.5 * (np.log10(edges[1:]) + np.log10(edges[:-1]))
         centers = 10**centers_log
 
-        # Normalised histogram
+        # Histogram
         hist = np.histogram(radius, bins=edges)[0]
-        # hist_scaled = hist / np.diff(edges) / nhalo
-        hist_scaled = hist  # / nhalo / np.diff(edges)
-        # hist_scaled = np.copy(hist)
 
         # Averagey galaxies per halo
         Nsat = len(radius) / nhalo
@@ -141,132 +75,115 @@ def main():
         #       Z and dZ three times (once for each fit param), even
         #       though Z and dZ do not change per fit iteration. So
         #       large improvement to be made here
+        def galaxy_dist(x, Nsat, a, b, c):
+            """Non-normalised galaxy dist"""
+            return 4 * np.pi * Nsat * x ** (a-1) * b ** (3-a) * np.exp(-((x/b)**c))
 
-        from helperscripts.integrate import romberg
+        def dgalaxy_dparam(x, Nsat, a, b, c, which="a"):
+            """Derivative of non-normalised dist wrt its params"""
+            if which == "a":
+                extra_term = np.log(x/b)
+            if which == "b":
+                extra_term = (c * (x/b)**c - (a-3)) / b
+            if which == "c":
+                extra_term = -1 * np.log(x/b) * (x/b)**c
 
-        def func2norm(x, a, b, c, Nsat):
-            return (
-                4
-                * np.pi
-                * Nsat
-                * x ** (a - 1)
-                * b ** (3 - a)
-                * np.exp(-((x / b) ** c))
-            )
+            return galaxy_dist(x, Nsat, a, b, c) * extra_term
 
         def partition(a, b, c):
-            func = lambda x: func2norm(x, a, b, c, 1)
-            return romberg(func, (1e-4, 5), m=10)
+            """Normalisation partition"""
+            integrand = lambda x: galaxy_dist(x, 1, a, b, c)
 
-        def model(x, a, b, c):
-            return func2norm(x, a, b, c, Nsat) / partition(a, b, c)
+            return romberg(integrand, (1e-4, 5), m=ORDER)
 
-        def df_da(x, a, b, c):
-            return func2norm(x, a, b, c, Nsat) * np.log(x / b)
+        def dpartition_dparams(a, b, c):
+            """Partition derivative wrt one of its params"""
+            df_da = lambda x: dgalaxy_dparam(x, 1, a, b, c, which="a")
+            df_db = lambda x: dgalaxy_dparam(x, 1, a, b, c, which="b")
+            df_dc = lambda x: dgalaxy_dparam(x, 1, a, b, c, which="c")
 
-        def df_db(x, a, b, c):
-            return func2norm(x, a, b, c, Nsat) * (c * (x / b) ** c - (a - 3)) / b
+            dpart_da = romberg(df_da, (1e-4, 5), m=ORDER)
+            dpart_db = romberg(df_db, (1e-4, 5), m=ORDER)
+            dpart_dc = romberg(df_dc, (1e-4, 5), m=ORDER)
 
-        def df_dc(x, a, b, c):
-            return func2norm(x, a, b, c, Nsat) * np.log(x / b) * (x / b) ** c
+            return [dpart_da, dpart_db, dpart_dc]
 
-        def dpart_dparam(func):
-            return romberg(func, (1e-4, 5), m=10)
+        def model(x, Nsat, a, b, c):
+            """Normalised model"""
+            return galaxy_dist(x, Nsat, a, b, c) / partition(a, b, c)
 
-        def dn_da(x, a, b, c):
-            derivative = lambda x: df_da(x, a, b, c)
+        def dmodel_dparam(x, Nsat, a, b, c, which="a"):
+            """Model derivative wrt one of its params"""
+            dZ = dpartition_dparams(a, b, c)
             Z = partition(a, b, c)
-            dZ = dpart_dparam(derivative)
+            if which == "a":
+                extra_term = np.log(x/b)
+                dZ = dZ[0]
+            if which == "b":
+                extra_term = (c * (x/b)**c - (a-3)) / b
+                dZ = dZ[1]
+            if which == "c":
+                extra_term = -1 * np.log(x/b) * (x/b)**c
+                dZ = dZ[2]
 
-            return -1 / Z**2 * func2norm(
-                x, a, b, c, Nsat
-            ) * dZ + 1 / Z * derivative(x)
+            # Product rule
+            return galaxy_dist(x, Nsat, a, b, c) * (extra_term/Z - dZ/Z**2)
 
-        def dn_db(x, a, b, c):
-            derivative = lambda x: df_db(x, a, b, c)
-            Z = partition(a, b, c)
-            dZ = dpart_dparam(derivative)
+        def bin_function(func, binedges):
+            """Bin function given binedges"""
+            N = len(binedges) - 1
+            result = np.zeros(N)
 
-            return -1 / Z**2 * func2norm(
-                x, a, b, c, Nsat
-            ) * dZ + 1 / Z * derivative(x)
+            for i in range(N):
+                result[i] = romberg(func, (binedges[i], binedges[i+1]), m=ORDER)
 
-        def dn_dc(x, a, b, c):
-            derivative = lambda x: df_dc(x, a, b, c)
-            Z = partition(a, b, c)
-            dZ = dpart_dparam(derivative)
-
-            return -1 / Z**2 * func2norm(
-                x, a, b, c, Nsat
-            ) * dZ + 1 / Z * derivative(x)
-
-        def dn_da_binned(x, a, b, c):
-            result = np.zeros_like(x)
-
-            for i in range(len(x)):
-                result[i] = romberg(
-                    dn_da, (edges[i], edges[i + 1]), m=10, args=(a, b, c)
-                )
             return result * nhalo
 
-        def dn_db_binned(x, a, b, c):
-            result = np.zeros_like(x)
+        def binned_model(binedges, Nsat, a, b, c):
+            """Binned galaxy model"""
+            func = lambda x: model(x, Nsat, a, b, c)
+            return bin_function(func, binedges)
 
-            for i in range(len(x)):
-                result[i] = romberg(
-                    dn_db, (edges[i], edges[i + 1]), m=10, args=(a, b, c)
-                )
-            return result * nhalo
+        def dmodel_dparams_binned(binedges, Nsat, a, b, c, which):
+            """Binned derivative wrapper"""
+            dm_dp = lambda x: dmodel_dparam(x, Nsat, a, b, c, which=which)
 
-        def dn_dc_binned(x, a, b, c):
-            result = np.zeros_like(x)
+            return bin_function(dm_dp, binedges)
 
-            for i in range(len(x)):
-                result[i] = romberg(
-                    dn_dc, (edges[i], edges[i + 1]), m=10, args=(a, b, c)
-                )
-            return result * nhalo
+        # Grab the binned model derivatives...
+        dbinned_da = lambda x, a, b, c: dmodel_dparams_binned(x, Nsat, a, b, c, "a")
+        dbinned_db = lambda x, a, b, c: dmodel_dparams_binned(x, Nsat, a, b, c, "b")
+        dbinned_dc = lambda x, a, b, c: dmodel_dparams_binned(x, Nsat, a, b, c, "c")
+        # ... and save in tuple for easy passing
+        derivatives = [dbinned_da, dbinned_db, dbinned_dc]
 
-        def binned_model(x, a, b, c):
-            result = np.zeros_like(x)
-            for i in range(len(edges) - 1):
-                result[i] = romberg(
-                    model, (edges[i], edges[i + 1]), m=10, args=(a, b, c)
-                )
-
-            return result * nhalo  # * Ntest # / np.sum(result)
-
-        # TODO: What to do with sigma if zero?
+        # The model to-be-fitted should have Nsat fixed
+        fit_model = lambda edges, a, b, c: binned_model(edges, Nsat, a, b, c)
+    
+        # Expected standard deviation
         def sigma(x, a, b, c):
-            o = np.sqrt(binned_model(x, a, b, c))
-            o[o <= 0] = 1
-            return o
-
-        def sigma_const(x, A, a, b, c):
-            return np.sqrt(Nsat) * np.ones_like(x)
-
-        # Derivative tuple
-        derivatives = (dn_da_binned, dn_db_binned, dn_dc_binned)
-
+            return np.sqrt(fit_model(x, a, b, c))
+        
+        # TODO: find a way to make it work with this theory?
+        #       Current problem: makes it so that fitting
+        #       procedure assumes a theory model, instead of data etc
+        # from helperscripts.satellite import GalaxyDistribution
+        # theory = GalaxyDistribution(ORDER)
+        # theory.theta = (a, b, c)
+        
         # Initial guess and data matrix
-        p0 = [2.0, 1.0, 3.0]
-        lucas = np.array(
-            [
-                [1.30767685, 1.11882273, 3.15335137],
-                [1.5918548, 0.91906036, 3.47614821],
-                [1.48406971, 0.80283839, 2.87626552],
-                [1.94381939, 0.60776245, 2.50984679],
-                [1.99410978, 0.70836665, 2.04264211],
-            ]
-        )
-        data = np.stack([centers, hist_scaled], axis=1)
+        data = [edges, hist]
+        p0 = [2, 1, 3]
+        
+        # TODO: Come back to this
+        # from MCMC import metropolis_hastings_fit
+        # params = metropolis_hastings_fit(data, binned_model, gaussian_logL, 0.1, p0, num_iterations=100_000, num_chains=1, step_size=0.05)
+        
         # Levenberg-Marquardt fitting procedure
-
-        # Variances based on current model params
-        # TODO: Is this correct??
+        # Model parameters
         params = levenberg_marquardt(
             data=data,
-            model=binned_model,
+            model=fit_model,
             sigma=sigma,  # np.sqrt(Ntest),
             derivatives=derivatives,
             logL=gaussian_logL,
@@ -274,30 +191,21 @@ def main():
             p0=p0,
             step=1e-3,
             weight=10,
-            max_iters=100,
+            DoF=Nbins-4,  # We have 3 params, so intuitively Nbins - 3. However, once Nbins-1 have been filled, the last one is fixd
+            max_iters=10,
             atol=0.01,
         )
-
-        # Constant variances
-        # params_const = levenberg_marquardt(
-        #     data=data,
-        #     model=binned_model,
-        #     sigma=sigma_const,  # np.sqrt(Ntest),
-        #     derivatives=(dn_da, dn_db, dn_dc),
-        #     logL=gaussian_logL,
-        #     dlogL_dp=gaussian_logL_gradient,
-        #     p0=p0,
-        #     step=1e-2,
-        #     weight=20,
-        #     max_iters=300,
-        #     atol=0.01,
-        # )
+        
+        from helperscripts.TEMP import lucas
+        print("chi2 own  ", gaussian_logL(data, fit_model, sigma(edges, *params), params))
+        print("chi2 lucas", gaussian_logL(data, fit_model, sigma(edges, *lucas[i]), lucas[i]))
+        
         # TODO: Currently compares to curve_fit
         #       Keep in as comparison? Or remove later?
         from scipy.optimize import curve_fit
 
         popt, pcov = curve_fit(
-            binned_model, data[:, 0], data[:, 1], p0, sigma=np.sqrt(Nsat)
+            fit_model, edges, hist, p0, sigma=np.sqrt(Nsat)
         )
 
         print("    Best fitting parameters using Levenberg-Marquardt")
@@ -312,44 +220,46 @@ def main():
         row = i // 2
         col = i % 2
         axs[row, col].set(
-            title=rf"$M_h \approx 10^{{{11+i}}} M_{{\odot}}/h$",
+            title=f"$M_h \\approx 10^{{{11+i}}} M_{{\\odot}}/h$",
             xlabel="x",
             ylabel=r"N",
             xscale="log",
             yscale="log",
             xlim=(1e-4, 5),
-            ylim=(1e-3, 2 * max(hist_scaled)),  # / np.diff(edges))),
+            ylim=(1e-3, 2 * max(hist / np.diff(edges) / nhalo)),
         )
 
-        # axs[row, col].stairs(binned_model(centers, *lucas[i]) / np.diff(edges), edges=edges, ec="green", label="lucas")
         axs[row, col].stairs(
-            hist_scaled, edges=edges, label="Binned data"  # / np.diff(edges),
-        )
-        axs[row, col].stairs(
-            binned_model(centers, *popt),  # / np.diff(edges),
-            edges=edges,
-            lw=5,
-            ec="gray",
-            alpha=0.5,
-            label="Best-fit profile (scipy curve_fit)",
-        )
-        axs[row, col].stairs(
-            binned_model(centers, *params),  # / np.diff(edges),
-            edges=edges,
-            ec="k",
-            label="Best-fit profile \n(Levenberg-Marquardt, non-constant $\\sigma$)",
+            hist / np.diff(edges) / nhalo, edges=edges, label="Binned data",
         )
         # axs[row, col].stairs(
-        #     binned_model(centers, *params_const) / np.diff(edges),
+        #     binned_model(centers, *popt) / np.diff(edges) / nhalo,
         #     edges=edges,
-        #     ec="r",
-        #     label="Best-fit profile \n(Levenberg-Marquardt, consant $\\sigma$)",
+        #     lw=5,
+        #     ec="gray",
+        #     alpha=0.5,
+        #     label="Best-fit profile (scipy curve_fit)",
         # )
+        axs[row, col].stairs(
+            fit_model(edges, *params) / np.diff(edges) / nhalo,
+            edges=edges,
+            ec="k",
+            label="Best-fit profile (Levenberg-Marquardt)",
+        )
+        axs[row, col].stairs(
+            fit_model(edges, *lucas[i]) / np.diff(edges) / nhalo,
+            edges=edges,
+            ec="r",
+            label="Lucas",
+        )
     handles, labels = axs[2, 0].get_legend_handles_labels()
-    plt.figlegend(handles, labels, loc=(0.6, 0.15))
+    fig.tight_layout()
+    axs[2,0].legend(loc="center left", bbox_to_anchor=(1.2, 0.5))
+    # axs[2,1].legend(handles, labels, loc=(0.4, 0.15))
+    # plt.figlegend(handles, labels, loc=(0.4, 0.15))
+    # plt.figlegend(handles, labels, loc='lower left')#, bbox_to_anchor=(0.4, 0.15))
     axs[2, 1].set_visible(False)
 
-    fig.tight_layout()
     fig.savefig(f"figures/subplots_fitted", bbox_inches="tight", dpi=600)
     stopTime = time.time()
 
