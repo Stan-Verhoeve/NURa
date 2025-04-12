@@ -2,14 +2,18 @@ def main():
     import numpy as np
     from helperscripts.integrate import romberg
     from helperscripts.optimize import golden_section, levenberg_marquardt
-    from helperscripts.likelihoods import gaussian_logL, gaussian_logL_gradient, poissonian_logL, poissonian_logL_gradient
+    from helperscripts.likelihoods import (
+        gaussian_logL,
+        gaussian_logL_gradient,
+        poissonian_logL,
+        poissonian_logL_gradient,
+    )
     from helperscripts.io import readfile
     import matplotlib.pyplot as plt
     import time
-    
+
     # Order of Romberg integration
     ORDER = 4
-
 
     ##########################
     ## Q1a: finding maximum ##
@@ -20,12 +24,11 @@ def main():
     c = 1.6
     Nsat = 100
     A = 256 / (5 * np.pi**1.5)
-    
+
     # Function to minimize. This is -x^2 n(x)
     # Move 4pi ou, and reintroduce it in the end result only
     func = lambda x, *args: -(x**2) * n(x, 1, 1, *args)
     N_of_x = lambda x, *args: 4 * np.pi * x**2 * n(x, A, Nsat, *args)
-    
 
     # TODO: double-check bracket?
     #       use other minimization routine?
@@ -37,7 +40,6 @@ def main():
     print(f"Maximum found at x={xmin}")
     print(f"Function value at maximum: N(x) = {N_of_x(xmin, a, b, c)}")
 
-    
     ###########################
     ## Q1b: Gaussian fitting ##
     ###########################
@@ -77,16 +79,23 @@ def main():
         #       large improvement to be made here
         def galaxy_dist(x, Nsat, a, b, c):
             """Non-normalised galaxy dist"""
-            return 4 * np.pi * Nsat * x ** (a-1) * b ** (3-a) * np.exp(-((x/b)**c))
+            return (
+                4
+                * np.pi
+                * Nsat
+                * x ** (a - 1)
+                * b ** (3 - a)
+                * np.exp(-((x / b) ** c))
+            )
 
         def dgalaxy_dparam(x, Nsat, a, b, c, which="a"):
             """Derivative of non-normalised dist wrt its params"""
             if which == "a":
-                extra_term = np.log(x/b)
+                extra_term = np.log(x / b)
             if which == "b":
-                extra_term = (c * (x/b)**c - (a-3)) / b
+                extra_term = (c * (x / b) ** c - (a - 3)) / b
             if which == "c":
-                extra_term = -1 * np.log(x/b) * (x/b)**c
+                extra_term = -1 * np.log(x / b) * (x / b) ** c
 
             return galaxy_dist(x, Nsat, a, b, c) * extra_term
 
@@ -117,17 +126,17 @@ def main():
             dZ = dpartition_dparams(a, b, c)
             Z = partition(a, b, c)
             if which == "a":
-                extra_term = np.log(x/b)
+                extra_term = np.log(x / b)
                 dZ = dZ[0]
             if which == "b":
-                extra_term = (c * (x/b)**c - (a-3)) / b
+                extra_term = (c * (x / b) ** c - (a - 3)) / b
                 dZ = dZ[1]
             if which == "c":
-                extra_term = -1 * np.log(x/b) * (x/b)**c
+                extra_term = -1 * np.log(x / b) * (x / b) ** c
                 dZ = dZ[2]
 
             # Product rule
-            return galaxy_dist(x, Nsat, a, b, c) * (extra_term/Z - dZ/Z**2)
+            return galaxy_dist(x, Nsat, a, b, c) * (extra_term / Z - dZ / Z**2)
 
         def bin_function(func, binedges):
             """Bin function given binedges"""
@@ -135,7 +144,7 @@ def main():
             result = np.zeros(N)
 
             for i in range(N):
-                result[i] = romberg(func, (binedges[i], binedges[i+1]), m=ORDER)
+                result[i] = romberg(func, (binedges[i], binedges[i + 1]), m=ORDER)
 
             return result * nhalo
 
@@ -159,26 +168,26 @@ def main():
 
         # The model to-be-fitted should have Nsat fixed
         fit_model = lambda edges, a, b, c: binned_model(edges, Nsat, a, b, c)
-    
+
         # Expected standard deviation
         def sigma(x, a, b, c):
             return np.sqrt(fit_model(x, a, b, c))
-        
+
         # TODO: find a way to make it work with this theory?
         #       Current problem: makes it so that fitting
         #       procedure assumes a theory model, instead of data etc
         # from helperscripts.satellite import GalaxyDistribution
         # theory = GalaxyDistribution(ORDER)
         # theory.theta = (a, b, c)
-        
+
         # Initial guess and data matrix
         data = [edges, hist]
         p0 = [2, 1, 3]
-        
+
         # TODO: Come back to this
         # from MCMC import metropolis_hastings_fit
         # params = metropolis_hastings_fit(data, binned_model, gaussian_logL, 0.1, p0, num_iterations=100_000, num_chains=1, step_size=0.05)
-        
+
         # Levenberg-Marquardt fitting procedure
         # Model parameters
         params = levenberg_marquardt(
@@ -191,22 +200,28 @@ def main():
             p0=p0,
             step=1e-3,
             weight=10,
-            DoF=Nbins-4,  # We have 3 params, so intuitively Nbins - 3. However, once Nbins-1 have been filled, the last one is fixd
+            DoF=Nbins
+            - 4,  # We have 3 params, so intuitively Nbins - 3. However, once Nbins-1 have been filled, the last one is fixd
             max_iters=10,
             atol=0.01,
         )
-        
+
         from helperscripts.TEMP import lucas
-        print("chi2 own  ", gaussian_logL(data, fit_model, sigma(edges, *params), params))
-        print("chi2 lucas", gaussian_logL(data, fit_model, sigma(edges, *lucas[i]), lucas[i]))
-        
+
+        print(
+            "chi2 own  ",
+            gaussian_logL(data, fit_model, sigma(edges, *params), params),
+        )
+        print(
+            "chi2 lucas",
+            gaussian_logL(data, fit_model, sigma(edges, *lucas[i]), lucas[i]),
+        )
+
         # TODO: Currently compares to curve_fit
         #       Keep in as comparison? Or remove later?
         from scipy.optimize import curve_fit
 
-        popt, pcov = curve_fit(
-            fit_model, edges, hist, p0, sigma=np.sqrt(Nsat)
-        )
+        popt, pcov = curve_fit(fit_model, edges, hist, p0, sigma=np.sqrt(Nsat))
 
         print("    Best fitting parameters using Levenberg-Marquardt")
         print(f"        a={params[0]}")
@@ -230,7 +245,9 @@ def main():
         )
 
         axs[row, col].stairs(
-            hist / np.diff(edges) / nhalo, edges=edges, label="Binned data",
+            hist / np.diff(edges) / nhalo,
+            edges=edges,
+            label="Binned data",
         )
         # axs[row, col].stairs(
         #     binned_model(centers, *popt) / np.diff(edges) / nhalo,
@@ -254,7 +271,7 @@ def main():
         )
     handles, labels = axs[2, 0].get_legend_handles_labels()
     fig.tight_layout()
-    axs[2,0].legend(loc="center left", bbox_to_anchor=(1.2, 0.5))
+    axs[2, 0].legend(loc="center left", bbox_to_anchor=(1.2, 0.5))
     # axs[2,1].legend(handles, labels, loc=(0.4, 0.15))
     # plt.figlegend(handles, labels, loc=(0.4, 0.15))
     # plt.figlegend(handles, labels, loc='lower left')#, bbox_to_anchor=(0.4, 0.15))

@@ -157,26 +157,27 @@ class Random:
     def normal(self, mean, std, size=1):
         # Store result
         result = np.zeros(size)
-        
+
         # If size is odd, add one more sample to generate
         odd = size % 2
         Nsamples = size + odd
-        
+
         # Uniform samples
-        U1 = self.uniform(0, 1, Nsamples//2)
-        U2 = self.uniform(0, 1, Nsamples//2)
-        
+        U1 = self.uniform(0, 1, Nsamples // 2)
+        U2 = self.uniform(0, 1, Nsamples // 2)
+
         # Normal samples using Box-Muller
-        Z1 = np.sqrt(-2 * np.log(U1)) * np.cos(2*np.pi * U2)
-        Z2 = np.sqrt(-2 * np.log(U1)) * np.sin(2*np.pi * U2)
-        
+        Z1 = np.sqrt(-2 * np.log(U1)) * np.cos(2 * np.pi * U2)
+        Z2 = np.sqrt(-2 * np.log(U1)) * np.sin(2 * np.pi * U2)
+
         # Add samples to result, and remove last one if size
         # requested was odd
-        result[:Nsamples//2] = Z1
-        result[Nsamples//2:] = Z2[:Nsamples//2-odd]
+        result[: Nsamples // 2] = Z1
+        result[Nsamples // 2 :] = Z2[: Nsamples // 2 - odd]
 
         # Scale results to mean and std
         return mean + result * std
+
 
 def fisher_yates(arr: np.ndarray, inplace: bool = False) -> np.ndarray:
     """

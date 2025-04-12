@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def test_bracketing():
     """
     Quick test on finding a bracket for a function
@@ -8,7 +9,7 @@ def test_bracketing():
     from helperscripts.optimize import find_bracket
 
     # Quadratic function with minimum -3 at x=0
-    func = lambda x: -3 + np.array(x)**2
+    func = lambda x: -3 + np.array(x) ** 2
     xx = np.linspace(-5, 5, 1000)
 
     initial_bracket = (-2, 3)
@@ -36,7 +37,7 @@ def test_find_min():
     from helperscripts.prettyprint import pretty_print_timeit
 
     # Quadratic function with minimum -3 at x=0
-    func = lambda x: -3 + np.array(x)**2
+    func = lambda x: -3 + np.array(x) ** 2
     xx = np.linspace(-5, 5, 1000)
 
     initial_bracket = (-2, 2)
@@ -108,6 +109,7 @@ def test_levenberg():
     plt.legend()
     plt.savefig("figures/tests/03_levenberg.png", bbox_inches="tight", dpi=600)
 
+
 def test_uniform_generator():
     """
     Test if the random generation works
@@ -122,7 +124,7 @@ def test_uniform_generator():
     generator = Random()
     points = generator.uniform(size=10_000)
     points_np = uniform(size=10_000)
-    
+
     # Average and std of generated points
     avg = points.mean()  # Expected: 0.5
     var = points.var()  # Expected: 1/12
@@ -171,7 +173,7 @@ def test_normal_generator():
     generator = Random()
     points = generator.normal(0, 1, size=10_000)
     points_np = normal(0, 1, size=10_000)
-    
+
     # Average and std of generated points
     avg = points.mean()  # Expected: 0
     var = points.var()  # Expected: 1
@@ -196,27 +198,37 @@ def test_normal_generator():
     print(f"    Average of generated points: {avg_np}. Expected: 0")
     print(f"    Variance of generated points: {var_np}. Expected: 1")
     print(f"    Correlation between successive numbers: {corr_np}")
-    
+
     edges = np.linspace(-5, 5, 50)
     points_hist = np.histogram(points, bins=edges, density=True)[0]
     points_np_hist = np.histogram(points_np, bins=edges, density=True)[0]
-    
+
     def analytic_gaussian(x, mu, sigma):
-        return 1/np.sqrt(2*np.pi*sigma**2) * np.exp(-0.5 * ((mu-x)/sigma)**2)
-        
+        return (
+            1
+            / np.sqrt(2 * np.pi * sigma**2)
+            * np.exp(-0.5 * ((mu - x) / sigma) ** 2)
+        )
+
     xx = np.linspace(-5, 5, 1000)
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.set(title="Testing normal distribution",
-           xlabel="x",
-           ylabel="PDF")
-    ax.plot(xx, analytic_gaussian(xx, 0, 1), c="gray", lw=5, alpha=0.7, label="Analytic normal PDF")
+    ax.set(title="Testing normal distribution", xlabel="x", ylabel="PDF")
+    ax.plot(
+        xx,
+        analytic_gaussian(xx, 0, 1),
+        c="gray",
+        lw=5,
+        alpha=0.7,
+        label="Analytic normal PDF",
+    )
     ax.stairs(points_hist, edges=edges, label="Own RNG", ec="r")
     ax.stairs(points_np_hist, edges=edges, label="Numpy RNG", ec="k", ls="--")
     ax.legend()
 
     fig.savefig("figures/tests/04_normal_dist.png")
+
 
 def test_rng_multidim():
     from helperscripts.random import Random
@@ -242,7 +254,6 @@ def test_rng_multidim():
     print(f"    Variance: {uniform.var()}. Expected: 1/12 = 0.08333...")
 
 
-
 def main():
     from helperscripts.prettyprint import pretty_print_title
 
@@ -260,11 +271,11 @@ def main():
     print()
     pretty_print_title("Now testing normal number generation")
     test_normal_generator()
-    
+
     print()
     pretty_print_title("Now testing uniform number generation")
     test_uniform_generator()
-    
+
     print()
     pretty_print_title("Now testing mutli-dimensional uniform rng")
     test_rng_multidim()
