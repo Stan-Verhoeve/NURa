@@ -35,7 +35,7 @@ def gaussian_logL(data, model, sigma, p):
         return np.inf
     if p[0] > 10 or p[0] < 0:
         return np.inf
-    x, y = data[:, 0], data[:, 1]
+    x, y = data[0], data[1]
     f = model(x, *p)
 
     res = (y - f) / sigma
@@ -68,7 +68,7 @@ def gaussian_logL_gradient(data, model, sigma, derivatives, p):
     float
         log-likelihood gradient assuming Gaussian errors
     """
-    x, y = data[:, 0], data[:, 1]
+    x, y = data[0], data[1]
 
     f = model(x, *p)
     # Jacobian
@@ -106,7 +106,7 @@ def poissonian_logL(data, model, sigma, p):
     float
         log-likelihood assuming Poissonian errors
     """
-    x, y = data[:, 0], data[:, 1]
+    x, y = data[0], data[1]
     y_model = model(x, *p)
     return np.sum(y * np.log(y_model + 1e-10) - y_model)
 
@@ -137,7 +137,7 @@ def poissonian_logL_gradient(data, model, sigma, derivatives, p):
     float
         log-likelihood gradient assuming Poissonian errors
     """
-    x, y = data[:, 0], data[:, 1]
+    x, y = data[0], data[1]
     f = model(x, *p)
 
     # Jacobian
