@@ -1,123 +1,121 @@
 import numpy as np
 from .integrate import romberg
-from .likelihoods import gaussian_logL, gaussian_logL_gradient
 
+# Order for Romberg integration
+ORDER = 4
+XMIN = 1e-4
+XMAX = 5
 
-class GalaxyDistribution:
+def n(
+    x: np.ndarray, A: float, Nsat: float, a: float, b: float, c: float
+) -> np.ndarray:
     """
-    Theory class for galaxy distributions. Main idea is
-    to hold parameters and recalculate integrals only ONCE
-    when new params are passed
+    Number density profile of satellite galaxies
 
-    Can I make it agnostic to data? Probably
-    Need to make it only contain funtions that I can extract
-    and the only thing that is fixed, is the params
+    Parameters
+    ----------
+    x : float | ndarray
+        Radius in units of virial radius; x = r / r_virial
+    A : float
+        Normalisation
+    Nsat : float
+        Average number of satellites
+    a : float
+        Small-scale slope
+    b : float
+        Transition scale
+    c : float
+        Steepness of exponential drop-off
+
+    Returns
+    -------
+    float | ndarray
+        Same type and shape as x. Number density of satellite galaxies
+        at given radius x.
     """
+    return A * Nsat * ((x / b) ** (a - 3)) * np.exp(-((x / b) ** c))
 
-    def __init__(self, order):
-        # Order of integration scheme
-        self.order = order
-        # Parameter vector
-        self.__theta = None
+def galaxy_dist(x, Nsat, a, b, c):
+    """Non-normalised galaxy dist"""
+    return (
+        4
+        * np.pi
+        * Nsat
+        * x ** (a - 1)
+        * b ** (3 - a)
+        * np.exp(-((x / b) ** c))
+    )
 
-        # Normalisation partition
-        self.__Z = None
-        self.__dZ = None
+def dgalaxy_dparam(x, Nsat, a, b, c, which="a"):
+    """Derivative of non-normalised dist wrt its params"""
+    if which == "a":
+        extra_term = np.log(x / b)
+    if which == "b":
+        extra_term = (c * (x / b) ** c - (a - 3)) / b
+    if which == "c":
+        extra_term = -1 * np.log(x / b) * (x / b) ** c
 
-        return
+    return galaxy_dist(x, Nsat, a, b, c) * extra_term
 
-    @property
-    def Z(self):
-        return self.__Z
+def partition(a, b, c):
+    """Normalisation partition"""
+    integrand = lambda x: galaxy_dist(x, 1, a, b, c)
 
-    @property
-    def dZ(self):
-        return self.__dZ
+    return romberg(integrand, (XMIN, XMAX), m=ORDER)
 
-    @property
-    def theta(self):
-        return self.__theta
+def dpartition_dparams(a, b, c):
+    """Partition derivative wrt one of its params"""
+    df_da = lambda x: dgalaxy_dparam(x, 1, a, b, c, which="a")
+    df_db = lambda x: dgalaxy_dparam(x, 1, a, b, c, which="b")
+    df_dc = lambda x: dgalaxy_dparam(x, 1, a, b, c, which="c")
 
-    @theta.setter
-    def theta(self, new_theta):
-        self.__theta = new_theta
+    dpart_da = romberg(df_da, (XMIN, XMAX), m=ORDER)
+    dpart_db = romberg(df_db, (XMIN, XMAX), m=ORDER)
+    dpart_dc = romberg(df_dc, (XMIN, XMAX), m=ORDER)
 
-        # Recompute normalisation integral and
-        # derivative wrt parameters
-        self.__Z = self.partition(*new_theta)
-        self.__dZ = self.dpartition_dparams(*new_theta)
+    return [dpart_da, dpart_db, dpart_dc]
 
-    def galaxy_dist(self, x, Nsat, a, b, c):
-        """Non-normalised galaxy dist"""
-        return (
-            4 * np.pi * Nsat * x ** (a - 1) * b ** (3 - a) * np.exp(-((x / b) ** c))
-        )
+def model(x, Nsat, a, b, c):
+    """Normalised model"""
+    return galaxy_dist(x, Nsat, a, b, c) / partition(a, b, c)
 
-    def dgalaxy_dparam(self, x, Nsat, a, b, c, which="a"):
-        """Derivative of non-normalised dist wrt its params"""
-        if which == "a":
-            extra_term = np.log(x / b)
-        if which == "b":
-            extra_term = (c * (x / b) ** c - (a - 3)) / b
-        if which == "c":
-            extra_term = -1 * np.log(x / b) * (x / b) ** c
+def dmodel_dparam(x, Nsat, a, b, c, which="a"):
+    """Model derivative wrt one of its params"""
+    dZ = dpartition_dparams(a, b, c)
+    Z = partition(a, b, c)
+    if which == "a":
+        extra_term = np.log(x / b)
+        dZ = dZ[0]
+    if which == "b":
+        extra_term = (c * (x / b) ** c - (a - 3)) / b
+        dZ = dZ[1]
+    if which == "c":
+        extra_term = -1 * np.log(x / b) * (x / b) ** c
+        dZ = dZ[2]
 
-        return self.galaxy_dist(x, Nsat, a, b, c) * extra_term
+    # Product rule
+    return galaxy_dist(x, Nsat, a, b, c) * (extra_term / Z - dZ / Z**2)
 
-    def partition(self, a, b, c):
-        """Normalisation partition"""
-        integrand = lambda x: self.galaxy_dist(x, 1, a, b, c)
+def bin_function(func, binedges):
+    """Bin function given binedges"""
+    N = len(binedges) - 1
+    result = np.zeros(N)
+    
+    centers = 0.5 * (binedges[1:] + binedges[:-1])
+    result = func(centers) * np.diff(binedges)
+    # for i in range(N):
+    #     result[i] = romberg(func, (binedges[i], binedges[i + 1]), m=ORDER)
 
-        return romberg(integrand, (1e-4, 5), m=self.order)
+    return result
 
-    def dpartition_dparams(self, a, b, c):
-        """Partition derivative wrt one of its params"""
-        df_da = lambda x: self.dgalaxy_dparam(x, 1, a, b, c, which="a")
-        df_db = lambda x: self.dgalaxy_dparam(x, 1, a, b, c, which="b")
-        df_dc = lambda x: self.dgalaxy_dparam(x, 1, a, b, c, which="c")
+def binned_model(binedges, Nsat, a, b, c):
+    """Binned galaxy model"""
+    func = lambda x: model(x, Nsat, a, b, c)
+    return bin_function(func, binedges)
 
-        dpart_da = romberg(df_da, (1e-4, 5), m=self.order)
-        dpart_db = romberg(df_db, (1e-4, 5), m=self.order)
-        dpart_dc = romberg(df_dc, (1e-4, 5), m=self.order)
+def dmodel_dparams_binned(binedges, Nsat, a, b, c, which):
+    """Binned derivative wrapper"""
+    dm_dp = lambda x: dmodel_dparam(x, Nsat, a, b, c, which=which)
 
-        return [dpart_da, dpart_db, dpart_dc]
+    return bin_function(dm_dp, binedges)
 
-    def model(self, x, Nsat, a, b, c):
-        """Normalised model"""
-        return self.galaxy_dist(x, Nsat, a, b, c) / self.Z
-
-    def dmodel_dparam(self, x, Nsat, a, b, c, which="a"):
-        """Model derivative wrt one of its params"""
-        if which == "a":
-            extra_term = np.log(x / b)
-            dZ = self.dZ[0]
-        if which == "b":
-            extra_term = (c * (x / b) ** c - (a - 3)) / b
-            dZ = self.dZ[1]
-        if which == "c":
-            extra_term = -1 * np.log(x / b) * (x / b) ** c
-            dZ = self.dZ[2]
-
-        # Product rule
-        return self.galaxy_dist(x, Nsat, a, b, c) * (
-            extra_term / self.Z - dZ / self.Z**2
-        )
-        # return -1 / self.Z**2 * self.galaxy_dist(x, Nsat, a, b, c) * dZ + 1/self.Z * self.galaxy_dist(x, Nsat, a, b, c) * extra_term
-
-    def bin_function(self, func, binedges):
-        N = len(binedges) - 1
-        result = np.zeros(N)
-
-        for i in range(N):
-            result[i] = romberg(func, (binedges[i], binedges[i + 1]), m=self.order)
-
-        return result
-
-    def binned_model(self, binedges, Nsat, a, b, c):
-        func = lambda x: self.model(x, Nsat, a, b, c)
-        return self.bin_function(func, binedges)
-
-    def dmodel_dparams_binned(self, binedges, Nsat, a, b, c, which):
-        dmodel_dparam = lambda x: self.dmodel_dparam(x, Nsat, a, b, c, which=which)
-
-        return self.bin_function(dmodel_dparam, binedges)
