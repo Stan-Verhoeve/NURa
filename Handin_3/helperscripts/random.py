@@ -9,42 +9,6 @@ def get_time_based_seed():
     """
     return np.uint64(time.time() * 1_000_000)
 
-
-def pearson(x: np.ndarray, y: np.ndarray = None):
-    """
-    Calculate the Pearson correlation coefficient given two arrays `x` and `y`.
-    If only `x` is given, calculates the auto-correlation coefficient
-    Parameters
-    ----------
-    x : ndarray
-        First array
-    y : ndarray
-        Second array
-
-    Returns
-    -------
-    r_xy : float
-        Pearson correlation coefficient
-    """
-    if y is None:
-        y = x.copy()
-    if not np.shape(x) == np.shape(y):
-        raise ValueError(
-            f"Shape of `x` and `y` should be the same, but got {np.shape(x)} and {np.shape(y)}"
-        )
-    xy_mean = np.mean(x * y)
-    x_mean = np.mean(x)
-    y_mean = np.mean(y)
-    x_var = np.var(x)
-    y_var = np.var(y)
-
-    denom_inv = np.sqrt(x_var * y_var) ** (-1)
-
-    r_xy = (xy_mean - x_mean * y_mean) * denom_inv
-
-    return r_xy
-
-
 class Random:
     def __init__(self, seed=None):
         if seed is None:
@@ -154,7 +118,25 @@ class Random:
         """
         return self.uniform(low, high, size).astype(np.int32)
 
-    def normal(self, mean, std, size=1):
+    def normal(self, mu, sigma, size=1):
+        """
+        Generate array of normally distributed floats
+        using the Box-Muller method
+
+        Parameters
+        ----------
+        mu : int
+            Mean of the distribution
+        sigma : int
+            Standard deviation of the distribution
+        size : int
+            Size of array
+
+        Returns
+        -------
+        arr : ndarray
+            Array containing pseudo-random normally distributed numbers
+        """
         # Store result
         result = np.zeros(size)
 
@@ -176,7 +158,7 @@ class Random:
         result[Nsamples // 2 :] = Z2[: Nsamples // 2 - odd]
 
         # Scale results to mean and std
-        return mean + result * std
+        return mu + result * sigma
 
 
 def fisher_yates(arr: np.ndarray, inplace: bool = False) -> np.ndarray:
