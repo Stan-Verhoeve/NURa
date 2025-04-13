@@ -263,28 +263,69 @@ def quasi_newton(
     logL: callable,
     dlogL_dp: callable,
     p0: np.ndarray,
-    step: float = 1e-3,
-    weight: float = 10,
-    max_iters: int = 100,
+    max_iters: int = 10,
     atol: float = 0.01,
 ):
+    # Current parameter
     p = np.array(p0)
     x = data[0]
     y = data[1]
-
+    
+    I = np.eye(len(p))
     sm = sigma(x, *p)
-    H_inv = np.eye(len(p))
+    H = I.copy()
 
-    logL_prev = logL(data, model, sm, p)
     for _ in range(max_iters):
+        # Recalculate expected error
+        # sm = sigma(x, *p)
+
         # Calculate gradient and step in direction
         gradient = dlogL_dp(data, model, sm, derivatives, p)
-        step = H_inv @ gradient
-
+        if np.linalg.norm(gradient) < atol:
+            break
+        step = -1 * H @ gradient
+        
         # New parameters (assumes lambda=1)
         p_new = p + step
         logL_new = logL(data, model, sm, p_new)
+        
+        # Line search
+        alpha = 1.
+        c = 1e-4
+        rho = 0.9
 
-        # Check for convergence
-        if logL_prev - logL_new < atol:
-            return p_new
+        # Check if model at new params is worse than expected based on gradient
+        while logL(data, model, sm, p + alpha * step) > logL(data, model, sm, p) + c * alpha * (gradient @ p):
+            alpha *= rho
+
+        # Calculate delta, and new gradient
+        delta = alpha * step  # <-- Delta
+        p_new = p + delta  # <-- xi+1
+        grad_new = dlogL_dp(data, model, sm, derivatives, p_new)
+        d = grad_new - gradient  # <-- d
+        
+        # Inner products
+        delta_d = np.dot(delta, d)  # <-- delta dot d
+        Hd = np.dot(H, d)  # <-- H dot d
+        
+        # Avoid div-by-zero
+        if delta_d == 0.:
+            break
+        
+        # One over (delta dot d)
+        rho_inv = delta_d
+        rho_val = 1.0 / rho_inv  # <-- 1 / (delta dot d)
+        
+        # U from slides
+        u = delta * rho_val - Hd / np.dot(d, Hd)
+        
+        # Update Hessian matrix (equation taken from slides)
+        H += ((np.outer(delta, delta) * rho_val) - (np.outer(Hd, Hd) / np.dot(d, Hd)) + (np.dot(d, Hd) * np.outer(u, u)))
+        
+        p = p_new
+    return p
+
+
+
+
+
