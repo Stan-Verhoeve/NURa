@@ -9,6 +9,7 @@ def get_time_based_seed():
     """
     return np.uint64(time.time() * 1_000_000)
 
+
 class Random:
     def __init__(self, seed=None):
         if seed is None:

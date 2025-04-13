@@ -26,5 +26,6 @@ def main():
     print(f"Maximum found at x={xmin}")
     print(f"Function value at maximum: N(x) = {N_of_x(xmin, a, b, c)}")
 
+
 if __name__ in ("__main__"):
     main()

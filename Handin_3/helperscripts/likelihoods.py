@@ -146,15 +146,13 @@ def poissonian_logL_gradient(data, model, sigma, derivatives, p):
     """
     x, y = data[0], data[1]
     f = model(x, *p)
-    
+
     # Jacobian
     J = [df(x, *p) for df in derivatives]
     J = np.stack(J, axis=1)
-    zeros = f == 0.
+    zeros = f == 0.0
 
-    
     # TODO: errors because some parameters give f==0, which sucks
     # res = 1 / f[~zeros]  # <-- for infinite bins
     res = y[~zeros] / f[~zeros] - 1
     return -J[~zeros, :].T @ res
-

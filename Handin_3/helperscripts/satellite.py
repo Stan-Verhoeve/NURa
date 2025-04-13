@@ -6,6 +6,7 @@ ORDER = 4
 XMIN = 1e-4
 XMAX = 5
 
+
 def n(
     x: np.ndarray, A: float, Nsat: float, a: float, b: float, c: float
 ) -> np.ndarray:
@@ -35,16 +36,11 @@ def n(
     """
     return A * Nsat * ((x / b) ** (a - 3)) * np.exp(-((x / b) ** c))
 
+
 def galaxy_dist(x, Nsat, a, b, c):
     """Non-normalised galaxy dist"""
-    return (
-        4
-        * np.pi
-        * Nsat
-        * x ** (a - 1)
-        * b ** (3 - a)
-        * np.exp(-((x / b) ** c))
-    )
+    return 4 * np.pi * Nsat * x ** (a - 1) * b ** (3 - a) * np.exp(-((x / b) ** c))
+
 
 def dgalaxy_dparam(x, Nsat, a, b, c, which="a"):
     """Derivative of non-normalised dist wrt its params"""
@@ -57,11 +53,13 @@ def dgalaxy_dparam(x, Nsat, a, b, c, which="a"):
 
     return galaxy_dist(x, Nsat, a, b, c) * extra_term
 
+
 def partition(a, b, c):
     """Normalisation partition"""
     integrand = lambda x: galaxy_dist(x, 1, a, b, c)
 
     return romberg(integrand, (XMIN, XMAX), m=ORDER)
+
 
 def dpartition_dparams(a, b, c):
     """Partition derivative wrt one of its params"""
@@ -75,9 +73,11 @@ def dpartition_dparams(a, b, c):
 
     return [dpart_da, dpart_db, dpart_dc]
 
+
 def model(x, Nsat, a, b, c):
     """Normalised model"""
     return galaxy_dist(x, Nsat, a, b, c) / partition(a, b, c)
+
 
 def dmodel_dparam(x, Nsat, a, b, c, which="a"):
     """Model derivative wrt one of its params"""
@@ -96,11 +96,12 @@ def dmodel_dparam(x, Nsat, a, b, c, which="a"):
     # Product rule
     return galaxy_dist(x, Nsat, a, b, c) * (extra_term / Z - dZ / Z**2)
 
+
 def bin_function(func, binedges):
     """Bin function given binedges"""
     N = len(binedges) - 1
     result = np.zeros(N)
-    
+
     centers = 0.5 * (binedges[1:] + binedges[:-1])
     result = func(centers) * np.diff(binedges)
     # for i in range(N):
@@ -108,14 +109,15 @@ def bin_function(func, binedges):
 
     return result
 
+
 def binned_model(binedges, Nsat, a, b, c):
     """Binned galaxy model"""
     func = lambda x: model(x, Nsat, a, b, c)
     return bin_function(func, binedges)
+
 
 def dmodel_dparams_binned(binedges, Nsat, a, b, c, which):
     """Binned derivative wrapper"""
     dm_dp = lambda x: dmodel_dparam(x, Nsat, a, b, c, which=which)
 
     return bin_function(dm_dp, binedges)
-

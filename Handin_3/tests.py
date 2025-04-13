@@ -164,6 +164,7 @@ def test_quasi_newton():
     plt.legend()
     plt.savefig("figures/tests/04_newton.png", bbox_inches="tight", dpi=600)
 
+
 def test_uniform_generator():
     """
     Test if the random generation works
@@ -323,7 +324,7 @@ def main():
     print()
     pretty_print_title("Now testing Levenberg")
     test_levenberg()
-    
+
     print()
     pretty_print_title("Now testing quasi-newton BFGS")
     test_quasi_newton()

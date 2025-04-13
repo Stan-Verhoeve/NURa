@@ -17,7 +17,6 @@ def main():
     import matplotlib.pyplot as plt
     import time
 
-
     ###########################
     ## Q1b: Gaussian fitting ##
     ###########################
@@ -54,9 +53,15 @@ def main():
         #######################
 
         # Grab the binned model derivatives...
-        dbinned_da = lambda x, a, b, c: nhalo * dmodel_dparams_binned(x, Nsat, a, b, c, "a")
-        dbinned_db = lambda x, a, b, c: nhalo * dmodel_dparams_binned(x, Nsat, a, b, c, "b")
-        dbinned_dc = lambda x, a, b, c: nhalo * dmodel_dparams_binned(x, Nsat, a, b, c, "c")
+        dbinned_da = lambda x, a, b, c: nhalo * dmodel_dparams_binned(
+            x, Nsat, a, b, c, "a"
+        )
+        dbinned_db = lambda x, a, b, c: nhalo * dmodel_dparams_binned(
+            x, Nsat, a, b, c, "b"
+        )
+        dbinned_dc = lambda x, a, b, c: nhalo * dmodel_dparams_binned(
+            x, Nsat, a, b, c, "c"
+        )
         # ... and save in tuple for easy passing
         derivatives = [dbinned_da, dbinned_db, dbinned_dc]
 
@@ -66,7 +71,6 @@ def main():
         # Expected standard deviation
         def sigma(x, a, b, c):
             return np.sqrt(fit_model(x, a, b, c))
-
 
         #######################
         ## Levenberg fitting ##
@@ -104,9 +108,9 @@ def main():
 
         # For G-test, model and fit should sum to the same value
         Gmodel_norm = fit_model(edges, *params)
-        Gmodel_norm /= (np.sum(Gmodel_norm) / np.sum(hist))
+        Gmodel_norm /= np.sum(Gmodel_norm) / np.sum(hist)
 
-        G_value, p_value = G_test(hist, Gmodel_norm, DoF=Nbins-4)
+        G_value, p_value = G_test(hist, Gmodel_norm, DoF=Nbins - 4)
         print("\n    G-value: ", G_value)
         print("    p-value: ", p_value)
 
@@ -115,7 +119,7 @@ def main():
         print(f"        a={params[0]}")
         print(f"        b={params[1]}")
         print(f"        c={params[2]}")
-        
+
         # Plot the result
         row = i // 2
         col = i % 2
@@ -151,12 +155,14 @@ def main():
     axs[2, 0].legend(loc="center left", bbox_to_anchor=(1.2, 0.5))
     axs[2, 1].set_visible(False)
 
-    fig.savefig(f"figures/03_satellite_galaxies_poisson_fit", bbox_inches="tight", dpi=600)
+    fig.savefig(
+        f"figures/03_satellite_galaxies_poisson_fit", bbox_inches="tight", dpi=600
+    )
     stopTime = time.time()
 
     total_time = time.time() - total_time_start
     print(f"That took {total_time:.3f} seconds, or {total_time / 60:.3f} minutes")
 
+
 if __name__ in ("__main__"):
     main()
-

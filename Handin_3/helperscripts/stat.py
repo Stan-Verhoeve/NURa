@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.special import gammainc
 
+
 def pearson(x: np.ndarray, y: np.ndarray = None):
     """
     Calculate the Pearson correlation coefficient given two arrays `x` and `y`.
@@ -35,6 +36,7 @@ def pearson(x: np.ndarray, y: np.ndarray = None):
 
     return r_xy
 
+
 def chi2_cdf(x, k):
     """
     ChiSquared cumulative distribution
@@ -52,6 +54,7 @@ def chi2_cdf(x, k):
         P(chi2 <- x) given k degrees of freedom
     """
     return gammainc(0.5 * k, 0.5 * x)
+
 
 def G_test(observed: np.ndarray, expected: np.ndarray, DoF: int = 1) -> float:
     """
@@ -73,11 +76,13 @@ def G_test(observed: np.ndarray, expected: np.ndarray, DoF: int = 1) -> float:
     """
     if not np.all(isinstance(x, (int, np.int32, np.int64)) for x in observed):
         raise TypeError("Expects all observed counts to be integer.")
-    
+
     # G equals zero where data is zero (or rather, smaller than some fraction)
     zeros = observed == 0
-    G = 2 * np.sum(observed[~zeros] * (np.log(observed[~zeros]) - np.log(expected[~zeros])))
-    
+    G = 2 * np.sum(
+        observed[~zeros] * (np.log(observed[~zeros]) - np.log(expected[~zeros]))
+    )
+
     p_value = 1 - chi2_cdf(G, DoF)
 
     return G, p_value
