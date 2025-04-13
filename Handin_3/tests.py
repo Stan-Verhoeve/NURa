@@ -110,12 +110,67 @@ def test_levenberg():
     plt.savefig("figures/tests/03_levenberg.png", bbox_inches="tight", dpi=600)
 
 
+def test_quasi_newton():
+    from helperscripts.optimize import quasi_newton
+    from helperscripts.likelihoods import gaussian_logL, gaussian_logL_gradient
+    import numpy as np
+
+    xdata = np.linspace(1e-3, 5, 50)
+    xplot = np.linspace(1e-3, 5, 1000)
+
+    ## True model ##
+    def model(x, a, b):
+        return (a / x) ** 2 * np.exp(-b / x)
+
+    ## Derivatives ##
+    def d_model_da(x, a, b):
+        return 2 * a / x**2 * np.exp(-b / x)
+
+    def d_model_db(x, a, b):
+        return -1 / x * np.exp(-b / x) * (a / x) ** 2
+
+    p_true = [2, 1]
+
+    # Noisy data
+    y_true = model(xdata, *p_true)
+    sigma = 0.1
+    y_noisy = y_true + np.random.normal(0, sigma, xdata.shape)
+
+    data = [xdata, y_noisy]
+
+    ## Levenberg-Marquardt fitting procedure ##
+    params = quasi_newton(
+        data=data,
+        model=model,
+        sigma=lambda x, *p: np.ones_like(x) * sigma,
+        derivatives=(d_model_da, d_model_db),
+        logL=gaussian_logL,
+        dlogL_dp=gaussian_logL_gradient,
+        p0=(1, 0.5),
+        max_iters=100,
+        atol=1e-5,
+    )
+
+    print(f"Best params: {params}")
+    print(f"True params: {p_true}")
+
+    plt.figure()
+    plt.scatter(xdata, y_noisy, c="k", label="Noisy data")
+    plt.plot(xplot, model(xplot, *p_true), c="r", label="True model")
+    plt.plot(xplot, model(xplot, *params), c="blue", ls="--", label="Best fit")
+
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.legend()
+    plt.savefig("figures/tests/04_newton.png", bbox_inches="tight", dpi=600)
+
 def test_uniform_generator():
     """
     Test if the random generation works
     as intended
     """
-    from helperscripts.random import Random, pearson
+    from helperscripts.random import Random
+    from helperscripts.stat import pearson
     from helperscripts.prettyprint import pretty_print_timeit
     from timeit import timeit
     from numpy.random import uniform
@@ -166,7 +221,8 @@ def test_normal_generator():
     Test if the random generation works
     as intended
     """
-    from helperscripts.random import Random, pearson
+    from helperscripts.random import Random
+    from helperscripts.stat import pearson
     from numpy.random import normal
 
     # Get uniformly distributed points
@@ -227,7 +283,7 @@ def test_normal_generator():
     ax.stairs(points_np_hist, edges=edges, label="Numpy RNG", ec="k", ls="--")
     ax.legend()
 
-    fig.savefig("figures/tests/04_normal_dist.png")
+    fig.savefig("figures/tests/05_normal_dist.png", bbox_inches="tight", dpi=600)
 
 
 def test_rng_multidim():
@@ -267,6 +323,10 @@ def main():
     print()
     pretty_print_title("Now testing Levenberg")
     test_levenberg()
+    
+    print()
+    pretty_print_title("Now testing quasi-newton BFGS")
+    test_quasi_newton()
 
     print()
     pretty_print_title("Now testing normal number generation")
