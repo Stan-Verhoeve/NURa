@@ -251,7 +251,6 @@ def levenberg_marquardt(
         if abs(logL_diff) * DoF_inv < atol:
             return p
 
-    print("Max iters reached")
     return p
 
 
