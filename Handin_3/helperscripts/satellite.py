@@ -36,11 +36,15 @@ def n(
     """
     return A * Nsat * ((x / b) ** (a - 3)) * np.exp(-((x / b) ** c))
 
+
 # Chache parameters to avoid doing the integration multiple times
 _cached_params = {"abc": None, "Z": None, "dZ": None}
+
+
 def _rounded_params(a, b, c, digits=12):
     """Round params to digits"""
     return (round(a, digits), round(b, digits), round(c, digits))
+
 
 def get_partition_and_derivatives(a, b, c):
     """Get cached parameters"""
@@ -55,9 +59,11 @@ def get_partition_and_derivatives(a, b, c):
 
     return _cached_params["Z"], _cached_params["dZ"]
 
+
 def galaxy_dist(x, Nsat, a, b, c):
     """Non-normalised galaxy dist"""
     return 4 * np.pi * Nsat * x ** (a - 1) * b ** (3 - a) * np.exp(-((x / b) ** c))
+
 
 def dgalaxy_dparam(x, Nsat, a, b, c, which="a"):
     """Derivative of non-normalised dist wrt its params"""
@@ -118,7 +124,7 @@ def bin_function(func, binedges, use_integral=True):
     """Bin function given binedges"""
     N = len(binedges) - 1
     result = np.zeros(N)
-    
+
     if not use_integral:
         centers = 0.5 * (binedges[1:] + binedges[:-1])
         return func(centers) * np.diff(binedges)

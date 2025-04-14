@@ -20,14 +20,14 @@ def main():
     ##########################
     ## Q1c: Poisson fitting ##
     ##########################
-    
+
     # Store best-fitting parameters to save for later
-    best_fitted_parameters = np.zeros((5,3), dtype="float")
+    best_fitted_parameters = np.zeros((5, 3), dtype="float")
 
     total_time_start = time.time()
     # Create figure
     fig, axs = plt.subplots(3, 2, figsize=(1.5 * 6.4, 1.5 * 8.0))
-    
+
     # Iterate over the files
     for i in range(5):
         pretty_print_title(f"Currently working on satgals_m1{i+1}.txt")
@@ -50,7 +50,7 @@ def main():
 
         # Averagey galaxies per halo
         Nsat = len(radius) / nhalo
-        
+
         #######################
         ## Model preparation ##
         #######################

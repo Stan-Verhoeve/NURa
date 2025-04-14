@@ -20,9 +20,9 @@ def main():
     ###########################
     ## Q1b: Gaussian fitting ##
     ###########################
-    
+
     # Store best-fitting parameters to save for later
-    best_fitted_parameters = np.zeros((5,3), dtype="float")
+    best_fitted_parameters = np.zeros((5, 3), dtype="float")
 
     total_time_start = time.time()
     # Create figure
@@ -50,7 +50,7 @@ def main():
 
         # Averagey galaxies per halo
         Nsat = len(radius) / nhalo
-        
+
         #######################
         ## Model preparation ##
         #######################
@@ -100,7 +100,7 @@ def main():
             max_iters=20,
             atol=0.01,
         )
-        
+
         # Save parameters
         best_fitted_parameters[i] = params
 
