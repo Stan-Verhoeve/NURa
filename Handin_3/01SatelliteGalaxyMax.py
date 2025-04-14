@@ -20,7 +20,7 @@ def main():
     bracket = (0.1, 0.2)
 
     # Find minimum of func (maximum of N(x))
-    xmin = golden_section(func, *bracket, args=(a, b, c), atol=1e-8)
+    xmin = golden_section(func, *bracket, args=(a, b, c), atol=1e-8, rtol=1e-8)
 
     # Print results
     print(f"Maximum found at x={xmin}")
