@@ -1,0 +1,23 @@
+\section{Q1a: maximization}
+Throughout this question, we make use of the following number density profile:
+\begin{equation}
+	n(x) = A\langle N_\text{sat}\rangle \left(\frac{x}{b}\right)^{a-3} \exp\left[-\left(\frac{x}{b}\right)^c\right],
+\end{equation}
+where $x$ i the radius relative to the virial radius, $x\equiv r/r_\text{vir}$, and $a$, $b$, and $c$ are free parameters constrolling the small-scale slope, transition scale, and steepness of the exponential drop-off, respectively. $A$ normalized the profile such that the 3D integral from $x=0$ to $x_\text{max}=5$ give the average total number of satellites:
+\begin{equation}
+	\iiint_V n(x)dV = \langle N_\text{sat}\rangle.
+	\label{eq:Nsat}
+\end{equation}
+
+We define the number of satellites as
+\begin{equation}
+    N(x) = 4\pi x^2 n(x),
+    \label{eq:N_of_x}
+\end{equation}
+and find the maximum by minimizing $-N(x)$. For this minimization, we use a golden section method, where we propose an initial two-point bracket between which the minimum of the function lies. Upon visual inspection, we choose an initial bracket $b=(0.1, 0.2)$. The maximum is then found using the following code (\verb|01SatelliteGalaxyMax.py|):
+
+\lstinputlisting[style=pystyle, language=Python]{../01SatelliteGalaxyMax.py}
+which has output (\verb|OUT/01SatelliteGalaxyMax.txt|)
+\lstinputlisting[style=txtstyle]{../OUT/01SatelliteGalaxyMax.txt}
+For the golden section search, we use the algorithms outlined in \verb|helperscripts/optimize.py|. The masking logic in the \verb|golden_section| is convoluted and hard-to-read, but upon timing is $\sim2$ times as fast as \verb|if-else| logic.
+\lstinputlisting[style=pystyle, language=Python, lastline=132]{../helperscripts/optimize.py}
