@@ -1,0 +1,18 @@
+\section{Q1d: Test statistics}
+\label{sec:Q1d}
+The output of the test statistics is already shown in the previous two sections. This section serves as an explanation, and highlight of the code involved.\\
+\\
+To assess the goodness of our fits, we perform a G-test, given by
+\begin{equation}
+    G = 2\cdot\sum_i^{N_\text{bins}-1}O_i\log\left(\frac{O_i}{E_i}\right),
+\end{equation}
+where $O_i$ is the integer observed count, and $E_i$ is the expected count. Since the observed and expected model should integrate to the same value (the total number of observations), we rescale our expected model $E_i$, such that this is satisfied.\\
+\\
+We calculate the significance $Q$ using $Q=1-P(x, k)$, where $P(x,k)$ is the $\chi^2$ probability density function, given by
+\begin{equation}
+    P(x,k) = \frac{\gamma\left(\frac{k}{2}, \frac{x}{2}\right)}{\Gamma\left(\frac{k}{2}, \frac{x}{2}\right)}.
+\end{equation}
+Here, $\gamma(k, x)$ is the incomplete lower gamma function, $\Gamma(k, x)$ is the gamma function, $x$ is the test statistic ($G$ in our case), and $k$ is the number of degrees of freedom. Naively, $k$ is given by $N_\text{bins} - 3$, as we have 3 (independent) fitting parameters. However, not all bins are independent; once $N_\text{bins}-1$ bins have been filled, the number of points in the last bin is fixed. As such, the total number of degrees of freedom is given by $k=N_\text{bins}-1-3 = N_\text{bins}-4$.
+
+The code for the G-test and the $\chi^2$ distribution if given in \verb|helperscripts/stat.py|:
+\lstinputlisting[style=pystyle, language=Python, firstline=40]{../helperscripts/stat.py}

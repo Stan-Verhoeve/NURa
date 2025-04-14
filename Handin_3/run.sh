@@ -1,0 +1,137 @@
+#!/bin/bash
+
+# Start timer
+start_time=$(date +%s.%N)
+
+# Check if folder for figures exists
+if [[ ! -d "figures" ]]; then
+    # If not, create it
+    echo "Creating 'figures' directory..."
+    mkdir figures
+    mkdir figures/tests
+else
+    # If so, clear it
+    echo "'figures' directory already exists. Now clearing..."
+    rm -rf figures/*
+    mkdir figures/tests
+fi
+
+# Check if folder for txt exists
+if [[ ! -d "OUT" ]]; then
+    # If not, create it
+    echo "Creating 'OUT' directory..."
+    mkdir OUT
+else
+    # If so, clear it
+    echo "'OUT' directory already exists. Now clearing..."
+    rm -rf OUT/*
+fi
+
+# Check if folder for data exists
+if [[ ! -d "data" ]]; then
+    # If not, create it
+    echo "Creating 'data' directory..."
+    mkdir data
+    
+    # And download data files to it
+    echo "Downloading satellite data..."
+    wget -P ./data https://home.strw.leidenuniv.nl/~daalen/Handin_files/satgals_m11.txt
+    wget -P ./data https://home.strw.leidenuniv.nl/~daalen/Handin_files/satgals_m12.txt
+    wget -P ./data https://home.strw.leidenuniv.nl/~daalen/Handin_files/satgals_m13.txt
+    wget -P ./data https://home.strw.leidenuniv.nl/~daalen/Handin_files/satgals_m14.txt
+    wget -P ./data https://home.strw.leidenuniv.nl/~daalen/Handin_files/satgals_m15.txt
+else
+    echo "'data' directory already exists. Now checking for missing files..."
+
+    # List of expected files
+    for i in {11..15}; do
+        file="satgals_m${i}.txt"
+        filepath="./data/$file"
+        url="https://home.strw.leidenuniv.nl/~daalen/Handin_files/$file"
+
+        if [[ ! -f "$filepath" ]]; then
+            echo "$file is missing. Downloading..."
+            wget -P ./data "$url"
+        else
+            echo "$file already exists."
+        fi
+    done
+fi
+# Do we have command line arguments?
+if [[ -n "$1" ]]; then
+    script="$1"
+
+    # Fancy printing
+    printcmd="Now running $script"
+    varlength=${#printcmd}
+	
+    printf '%*s\n' "$varlength" '' | tr ' ' '-'
+    echo $printcmd
+    echo
+
+    # Run script provided in command line
+    python3 $script
+
+    # Exit
+    exit 0
+else
+	# Run all .py scripts in directory
+	for script in *.py; do
+		# Fancy printing
+		printcmd="Now running $script"
+		varlength=${#printcmd}
+		
+		# txt to write output to
+		outfile="OUT/${script%.py}.txt"
+
+		printf '%*s\n' "$varlength" '' | tr ' ' '-'
+		echo $printcmd
+		echo
+		python3 $script > $outfile
+	done
+fi
+
+# Check if latex folder exists
+if [[ ! -d "latex" ]]; then
+	echo "No 'latex' direcotry found. Skipping compilation..."
+else
+	# If no latex_out folder, create it
+	if [[ ! -d "latex/OUT" ]]; then
+		echo "Creating 'OUT' directory..."
+		mkdir latex/OUT
+	else
+		# else clear it
+		echo "'OUT' directory already exists. Now clearing..."
+		rm -rf latex/OUT/*
+	fi
+	
+	# Check if there are any .tex files
+	if [[ -f "latex/main.tex" ]]; then
+		echo "Creating PDFs from LaTeX files"
+		
+		cd latex
+		pdflatex -output-dir OUT main.tex
+		bibtex OUT/main
+		pdflatex -output-dir OUT main.tex
+		pdflatex -output-dir OUT main.tex
+		cd ..
+	else
+		echo "No main.tex file found. Skipping compilation..."
+	fi
+fi
+
+# Stop timer
+end_time=$(date +%s.%N)
+elapsed=$(echo "$end_time - $start_time" | bc)
+
+# Round to 3 decimal places
+elapsed_rounded=$(printf "%.3f" "$elapsed")
+
+# Compute minutes
+elapsed_minutes=$(echo "$elapsed / 60" | bc -l)
+elapsed_minutes_rounded=$(printf "%.3f" "$elapsed_minutes")
+
+printcmd="Total execution time: $elapsed_rounded seconds, or $elapsed_minutes_rounded minutes"
+varlength=${#printcmd}
+printf '%*s\n' "$varlength" '' | tr ' ' '-'
+echo $printcmd

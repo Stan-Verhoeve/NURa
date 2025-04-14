@@ -1,0 +1,158 @@
+import numpy as np
+
+##########################
+## Gaussian likelihoods ##
+##########################
+
+
+def gaussian_logL(data, model, sigma, p):
+    """
+    Gaussian log-likelihood
+
+    Parameters
+    ----------
+    data : ndarray
+        Data to compare to. Expected shape (Npoints, Ndims).
+        Expects data[:,-1] to be drawn from f(data[:,:-1], *p)
+    model : callable
+        Model to compare data to. Expected function call:
+            model(x, *params)
+    sigma : ndarray
+        Standard deviation of the model. Expected to have same
+        shape as data[:,-1]
+    p : ndarray
+        Model parameters
+
+    Returns
+    -------
+    float
+        log-likelihood assuming Gaussian errors
+    """
+
+    # Prior
+    # TODO: make prior function argument?
+    if p[1] < 0 or p[1] > 5:
+        return np.inf
+    if p[0] > 10 or p[0] < 0:
+        return np.inf
+    x, y = data[0], data[1]
+    f = model(x, *p)
+
+    res = (y - f) / sigma
+    return np.sum(res**2)
+
+
+def gaussian_logL_gradient(data, model, sigma, derivatives, p):
+    """
+    Gaussian log-likelihood derivatives wrt model parameters
+
+    Parameters
+    ----------
+    data : ndarray
+        Data to compare to. Expected shape (Npoints, Ndims).
+        Expects data[:,-1] to be drawn from f(data[:,:-1], *p)
+    model : callable
+        Model to compare data to. Expected function call:
+            model(x, *params)
+    sigma : ndarray
+        Standard deviation of the model. Expected to have same
+        shape as data[:,-1]
+    derivatives : tuple
+        Tuple of callables of same shape as p. Expects
+        derivatives[i] to correspond to p[i].
+    p : ndarray
+        Model parameters
+
+    Returns
+    -------
+    float
+        log-likelihood gradient assuming Gaussian errors
+    """
+    x, y = data[0], data[1]
+
+    f = model(x, *p)
+    # Jacobian
+    J = [df(x, *p) for df in derivatives]
+    J = np.stack(J, axis=1)
+    res = (y - f) / sigma**2
+    # res = 1 - (y / f) ** 2
+
+    return -2 * J.T @ res
+
+
+############################
+## Poissonian likelihoods ##
+############################
+
+
+def poissonian_logL(data, model, sigma, p):
+    """
+    Poissonian log-likelihood
+
+    Parameters
+    ----------
+    data : ndarray
+        Data to compare to. Expected shape (Npoints, Ndims).
+        Expects data[:,-1] to be drawn from f(data[:,:-1], *p)
+    model : callable
+        Model to compare data to. Expected function call:
+            model(x, *params)
+    sigma : ndarray
+        Standard deviation of the model. Expected to have same
+        shape as data[:,-1]
+    p : ndarray
+        Model parameters
+
+    Returns
+    -------
+    float
+        log-likelihood assuming Poissonian errors
+    """
+    if p[1] < 0 or p[1] > 5:
+        return np.inf
+    if p[0] > 10 or p[0] < 0:
+        return np.inf
+    x, y = data[0], data[1]
+    y_model = model(x, *p)
+    # return -np.sum(np.log(y_model + 1e-10))  # <-- for infinite bins
+    return -np.sum(y * np.log(y_model + 1e-10) - y_model)  # <-- for finite bins
+
+
+def poissonian_logL_gradient(data, model, sigma, derivatives, p):
+    """
+    Poissonian log-likelihood derivatives wrt model parameters
+
+    Parameters
+    ----------
+    data : ndarray
+        Data to compare to. Expected shape (Npoints, Ndims).
+        Expects data[:,-1] to be drawn from f(data[:,:-1], *p)
+    model : callable
+        Model to compare data to. Expected function call:
+            model(x, *params)
+    sigma : ndarray (NOT USED)
+        Standard deviation of the model. Expected to have same
+        shape as data[:,-1]
+    derivatives : tuple
+        Tuple of callables of same shape as p. Expects
+        derivatives[i] to correspond to p[i].
+    p : ndarray
+        Model parameters
+
+    Returns
+    -------
+    float
+        log-likelihood gradient assuming Poissonian errors
+    """
+    x, y = data[0], data[1]
+    f = model(x, *p)
+
+    # Jacobian
+    J = [df(x, *p) for df in derivatives]
+    J = np.stack(J, axis=1)
+    zeros = f == 0.0
+
+    # TODO: errors because some parameters give f==0, which sucks
+    # res = 1 / f[~zeros]  # <-- for infinite bins
+    res = y[~zeros] / f[~zeros] - 1
+    return -J[~zeros, :].T @ res

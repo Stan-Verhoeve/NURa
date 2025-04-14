@@ -1,0 +1,24 @@
+\section{Q1e: Monte-Carlo fitting}
+We perform a Monte-Carlo fitting procedure on the halo mass bin $10^{14}M_\odot/h$. We do this fitting procedure for both the Gaussian and Poissonian fit in parallel.\\
+\\
+We sample as many points as there are data $y_i$ from the distribution $N(x|\bvec{\theta})$, where we set $\bvec{\theta}$ to be the best-fitting parameters found in the previous sections. We then bin the sampled points using the same bins as we used for the data. We perform a fit on this synthetic mock data using the same methods as the previous sections (Levenberg-Marquardt for the Gaussian fit, BFGS for the Poissonian fit), and save the found parameters of this realization in a matrix. We repeat this process for $N_\text{iters}=100$ iterations. With an eye on the runtime limit of 10 minutes, we opt not to integrate our model over the bins, instead assuming our model to be constant in the interval $[x_i, x_{i+1}]$ (effectively performing a Riemann sum integration). Although this is technically less accurate, testing with runtimes going beyond the 10-minute limit found no significant difference in the final fit parameters.\\
+\\
+Our best-fit parameters are then taken to be the average of the parameters of all realization. We report our findings in \verb|../OUT/04SatelliteGalaxyMCMC.tex|, and correspondingly find figures \ref{fig:Q1e_gauss} and \ref{fig:Q1e_poiss}:
+\lstinputlisting[style=txtstyle]{../OUT/04SatelliteGalaxyMCMC.txt}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{../figures/04_satellite_galaxies_gaussian_mc.png}
+    \caption{Histogram of the  mean number of satellite galaxies for the mass bin $10^{14}M_\odot/h$, as function of radial distance $x$. Binned data (blue) is overplotted with the original best-fitting model (red), and the MC best-fitting model (black). Opaque gray lines show the best fit of each different realization in our MC simulation. We find that our MC best fit overestimates the tail end of the distribution. In fact, most of the fits to realizations lie above the original fit from the previous section. This is the direct result of the bias we introduced by fitting with a Gaussian log-likelihood, instead of a Poissonian one.}
+    \label{fig:Q1e_gauss}
+\end{figure}
+Comparing figures \ref{fig:Q1e_gauss} and \ref{fig:Q1e_poiss}, we find that the average fit parameters of our Monte-Carlo simulation overestimate the tail end of our distribution for a Gaussian log-likelihood, whereas assuming a Poisson log-likelihood, we find no such overestimation. This is clearly indicative of biases in the Gaussian fit. In particular, for bins with a low count, the (expected) Poisson distribution becomes asymmetric, whereas the Gaussian distribution remains symmetric. As such, fitting to Gaussian errors will overestimate the mean in that bin, which is reflected in the different realizations.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{../figures/04_satellite_galaxies_poissonian_mc.png}
+    \caption{Histogram of the  mean number of satellite galaxies for the mass bin $10^{14}M_\odot/h$, as function of radial distance $x$. Binned data (blue) is overplotted with the original best-fitting model (red), and the MC best-fitting model (black). Opaque gray lines show the best fit of each different realization in our MC simulation. We find that our MC best fit corresponds well with our original fit from the previous section, indicating that we are lo longer biased in our fitting procedure. }
+    \label{fig:Q1e_poiss}
+\end{figure}
+The full fitting procedure is given in \verb|04SatelliteGalaxyMCMC.py|:
+\lstinputlisting[style=pystyle, language=Python]{../04SatelliteGalaxyMCMC.py}

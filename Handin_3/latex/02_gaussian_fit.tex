@@ -1,0 +1,72 @@
+\section{Q1b: Gaussian fit}
+\subsection{Data preparation}
+Before we start our fitting procedure, we bin our data. As the radii $x$ span multiple orders of magnitude, we choose bins in a logarithmic space. As binned data introduces bias, we choose as many bins as we can allow whilst keeping computation time low. Through trial-and-error, we settled on $N_\text{bins} = 100$, where we fix the range to $[10^{-4}, 5]$ for all datasets.\\
+\\
+Having binned the data, we calculate the average number of satellites per halo, $\langle N_\text{sat}\rangle$, by dividing the total number of satellites by the total number of haloes. 
+
+\subsection{Fitting and minimization routine}
+We fit the binned data to a binned model,
+\begin{equation}
+    N_i = \int_{x_i}^{x_{i+1}} N(x| a, b, c) dx,
+    \label{eq:binned_model}
+\end{equation}
+where $x_i$ and $x_{i+1}$ are the binedges of bin $i$. \\
+\\
+For minimization of $\chi^2$, we choose a derivative-based approach in the form of a Levenberg-Marquardt algorithm. This means we need the derivatives of our model, \eqref{eq:binned_model}, with respect to its parameters $\bvec{\theta} = [a, b, c]$. Extra care should be taken when taking these derivatives, as the normalisation $A\equiv\frac{1}{Z}$ is, in general, a function of the model parameters, too: $A = A\left(\bvec{\theta}\right)$. Let us define the non-normalized model as $f\left(x| \bvec{\theta}\right)$, and the non-normalized unitary model as $g\left(x|\bvec{\theta}\right)$, such that
+\begin{equation}
+    N\left(x| \bvec{\theta}\right) = \frac{1}{Z\left(\bvec{\theta}\right)}\cdot f\left(x| \bvec{\theta}\right) = \frac{\langle N_\text{sat}\rangle}{Z(\bvec{\theta})}\cdot g\left(x|\bvec{\theta}\right).
+    \label{eq:unnorm_definition}
+\end{equation}
+Then, the normalisation partition $Z\left(x|\bvec{\theta}\right)$ is given by
+\begin{equation}
+    Z\left(x|\bvec{\theta}\right) = \int_{x_\text{min}}^{x_\text{max}}g(x|\bvec{\theta})dx,
+\end{equation}
+and we can write the derivatives of $N\left(x|\bvec{\theta}\right)$ as
+\begin{align}
+    \pd{N\left(x|\bvec{\theta}\right)}{\theta_k} &= \frac{1}{Z\left(\bvec{\theta}\right)} \pd{f\left(x|\bvec{\theta}\right)}{\theta_k} - \frac{1}{Z^2\left(\bvec{\theta}\right)}f\left(x|\bvec{\theta}\right)\pd{Z(\bvec{\theta})}{\theta_k},\\
+    &= \frac{1}{Z\left(\bvec{\theta}\right)} \pd{f\left(x|\bvec{\theta}\right)}{\theta_k} - \frac{1}{Z^2\left(\bvec{\theta}\right)}f\left(x|\bvec{\theta}\right)\int_{x_\text{min}}^{x_\text{max}}\pd{g(x|\bvec{\theta})}{\theta_k}dx,
+\end{align}
+where the structure directly follows from the product rule and chain rule.\\
+The individual derivatives of $f(x|\bvec{\theta})$ and $g(x|\bvec{\theta})$ are given by
+\begin{align}
+    \langle N_\text{sat}\rangle \pd{g(x|\bvec{\theta})}{a} &= \pd{f(x|\bvec{\theta})}{a} = f(x|\bvec{\theta}) \log\left(\frac{x}{b}\right),\\
+    \langle N_\text{sat}\rangle \pd{g(x|\bvec{\theta})}{b} &= \pd{f(x|\bvec{\theta})}{b} = f(x|\bvec{\theta}) \left[\frac{1}{b}\left(c\left(\frac{x}{b}\right)^c - (a-3)\right)\right],\\
+    \langle N_\text{sat}\rangle \pd{g(x|\bvec{\theta})}{c} &= \pd{f(x|\bvec{\theta})}{c} = -f(x|\bvec{\theta}) \left(\frac{x}{b}\right)^c\log\left(\frac{x}{b}\right),
+\end{align}
+from which the full derivatives of $N(x|\bvec{\theta})$ can be constructed via simple substitution. The derivatives of the binned model $N_i$ (equation \eqref{eq:binned_model}) are then simply given by
+\begin{equation}
+    \int_{x_i}^{x_{i+1}} \pd{N(x|\bvec{\theta})}{\theta_k}dx.
+\end{equation}
+To keep the code base (relatively) clean, we move all functions pertaining the model and binning thereof to a separate file \verb|helperscripts/satellite.py|:
+\lstinputlisting[style=pystyle, language=Python]{../helperscripts/satellite.py}
+Of note here is that we cache the numerical result of $Z(x|\bvec{\theta})$ and its derivatives for a given set of parameters $\bvec{\theta}$, to avoid unnecessary and expensive recalculations.\\
+To bin a function, we make use of \verb|bin_function(func, binedges, use_integral=True)|, where we give the option to calculate the integral over each bin (\verb|use_integral=True|), or to use a Riemann approximation $f(\cdot)(x_{i+1}-x_i)$. This second option is, in general, a worse approximation, but is significantly faster. It will only be used in the last bonus question to ensure enough sampling data.
+\lstinputlisting[style=pystyle, language=Python, firstline=123, lastline=134]{../helperscripts/satellite.py}
+For finding the best set of parameters $\bvec{\theta}$, we minimize $\chi^2$ assuming Poissonian errors (i.e. $\sigma_i^2 = N_i$), meaning we minimize
+\begin{equation}
+    \chi^2 = \sum_{i=0}^{N_\text{bins}-1}\frac{\left(y_i - \mu(x_i|\bvec{\theta})\right)^2}{\mu(x_i|\bvec{\theta})},
+\end{equation}
+where $y_i$ is the count in bin $i$, and $\mu(x_i|\bvec{\theta})$ is the model evaluated at bin $i$. As we are using a derivative-based approach, we need the gradient of the $chi^2$ function as well, which through the chain rule is given by
+\begin{equation}
+    \pd{\chi^2}{\theta_k} = -2\sum_{i=0}^{N_\text{bins}-1}\left[\frac{y_i^2}{\mu^2(x_i|\bvec{\theta})}-1\right]\pd{\mu(x_i|\bvec{\theta})}{\theta_k}.
+\end{equation}
+Realizing that the vector of derivatives, $\nabla_{\bvec{\theta}} \mu(x_i|\bvec{\theta})$, is simply the Jacobian, we can define the residue vector as $\bvec{r} = \frac{y_i^2}{\mu^2(x_i|\bvec{\theta})}-1$ and write the sum over $x_i$ as an inner product:
+\begin{equation}
+    \nabla_{\bvec{\theta}} \chi^2 = -2J^T\bvec{r}.
+\end{equation}
+We define the Gaussian likelihood ($\chi^2$) and its derivative in \verb|helperscripts/likelihoods.py|, where we have included priors $0 < a < 10$ and $0 < b < 5$:
+\lstinputlisting[style=pystyle, language=Python, lastline=80]{../helperscripts/likelihoods.py}
+With the likelihood and its derivative properly defined, we minimize it using the Levenberg-Marquardt routine outlined in the lecture slides. For this, we use the following code (\verb|helperscripts/optimize.py|), where we use \verb|solve_system()| from hand-in 1. No significant changes to this code have been made, apart from no longer splitting the $LU$ matrix into its components $L$ and $U$ when solving the system using forward and backward substition.
+\lstinputlisting[style=pystyle, language=Python, firstline=135, lastline=254]{../helperscripts/optimize.py}
+We report the best-fitting values, along with test statistics that will be discussed in section \ref{sec:Q1d}, in \verb|OUT/02SatelliteGalaxyGauss.txt|, and correspondingly find figure \ref{fig:Q1b}:
+\lstinputlisting[style=txtstyle]{../OUT/02SatelliteGalaxyGauss.txt}
+We obtain fits consistent with the data for 3 out of the 5 models. For the halo mass bin $10^{12}M_\odot/h$, we find a significant over-estimation of the tail end of the distribution, as well as an underestimation of its peak. Overestimation of the tail end is expected due to biased fitting, but the underestimation of its peak is unexpected. We attribute this underestimation to limited numerical precision in the fitting procedure due to many non-trivial calculations and large function call overheads, but are unsure.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{../figures/02_satellite_galaxies_gaussian_fit.png}
+    \caption{Histograms of the  mean number of satellite galaxies per halo mass bin, as function of radial distance $x$. Binned data (black) is overplotted with the best-fitting model (red). In general, we find agreement with the data, except for mass bin $10^{12}M_\odot/h$, where our fit does not accurately capture the peak of the profile, and where the left tail is overestimated. Overestimation is an expected result due to biased fitting, but no explanation for the peak discrepancy was found. The most probable cause is limited numerical precision in the fitting procedure due to many calculations and large function call overheads.}
+    \label{fig:Q1b}
+\end{figure}
+The full fitting procedure is given in \verb|02SatelliteGalaxyGauss.py|:
+\lstinputlisting[style=pystyle, language=Python]{../02SatelliteGalaxyGauss.py}

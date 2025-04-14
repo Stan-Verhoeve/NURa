@@ -98,7 +98,7 @@ def main():
     ################
     from numpy import logspace
     import matplotlib.pyplot as plt
-    
+
     temperatures = logspace(1, 15, 10_000)
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -107,12 +107,17 @@ def main():
         equi = equilibrium2(temperatures, nH)
         ax.plot(temperatures, equi, label=f"$n_H = {nH}$")
 
-    ax.set(xlabel="Temperature [k]",
-           ylabel="$\Gamma - \Lambda$",
-           xscale="log",
-           yscale="log")
+    ax.set(
+        xlabel="Temperature [k]",
+        ylabel="$\Gamma - \Lambda$",
+        xscale="log",
+        yscale="log",
+    )
     ax.legend()
-    fig.savefig("figures/02_heating_and_cooling_extra.png", bbox_inches="tight", dpi=300)
+    fig.savefig(
+        "figures/02_heating_and_cooling_extra.png", bbox_inches="tight", dpi=300
+    )
+
 
 if __name__ in ("__main__"):
     main()

@@ -1,0 +1,40 @@
+\section{Q1c: Poissonian fit}
+Data preparation and finding $\langle N_\text{sat}\rangle$ is identical to that of the previous section.
+\subsection{Fitting and minimization routine}
+We fit the binned data to a binned model,
+\begin{equation}
+    N_i = \int_{x_i}^{x_{i+1}} N(x| a, b, c) dx,
+    \label{eq:binned_model}
+\end{equation}
+where $x_i$ and $x_{i+1}$ are the binedges of bin $i$. \\
+\\
+For minimization of the log-likelihood, we choose a derivative-based approach in the form of a BFGS algorithm. All derivatives with respect to the model remain unchanged, and we immediately move to the log-likelihood, which is given by
+\begin{equation}
+    -\log L = -\sum_i^{N_\text{bins}-1}y_i\log\left[\mu(x_i|\bvec{\theta})\right] - \mu(x_i|\bvec{\theta}),
+\end{equation}
+where we have omitted the term $\log\left(y_i!\right)$, since it is a translation of the full likelihood space, and thus does not change the location of its extrema.
+Its derivative is then given by
+\begin{equation}
+    \pd{}{\theta_k}(-\log L) = -\sum_{i}^{N_\text{bins}-1}\left[\frac{y_i}{\mu(x_i|\bvec{\theta})}-1\right]\pd{\mu(x_i|\bvec{\theta})}{\theta_x},
+\end{equation}
+which follows directly from the chain rule. Here, too, we realize that the vector of derivatives, $\nabla_{\bvec{\theta}}\mu(x_i|\bvec{\theta})$, is the Jacobian, and define the residue vector $\bvec{r} = \frac{y_i}{\mu(x_i|\bvec{\theta})} - 1$, such that
+\begin{equation}
+    \nabla_{\bvec{\theta}} = -J^T\bvec{r}.
+\end{equation}
+We define the Poissonian likelihood and its derivative in \verb|helperscripts/likelihoods.py|, where we exclude contributions of $\mu(x_i|\bvec{\theta})=0$ to the derivative for numerical stability. Indeed, the derivative of $\mu(x_i|\bvec{\theta})=0$ to any of its parameters is 0, and thus does not contribute to the sum:
+\lstinputlisting[style=pystyle, language=Python, firstline=83]{../helperscripts/likelihoods.py}
+With the likelihood and its derivative properly defined, we minimize it using the BSFG routine outlined in the lecture slides. For this, we use the following code (\verb|helperscripts/optimize.py|):
+\lstinputlisting[style=pystyle, language=Python, firstline=257]{../helperscripts/optimize.py}
+We report the best-fitting values, along with test statistics that will be discussed in section \ref{sec:Q1d}, in \verb|OUT/03SatelliteGalaxyPoisson.txt|, and correspondingly find figure \ref{fig:Q1c}:
+\lstinputlisting[style=txtstyle]{../OUT/03SatelliteGalaxyPoisson.txt}
+We obtain fits consistent with the data for 3 out of the 5 models. In general, our Poissonian fits are more consistent than our Gaussian fits, which is expected, as the Gaussian fits tend to overestimate the tail end of the distribution, where zero-count bins are expected. This is indeed what we find in \ref{fig:Q1c}, where the tail end of our fits more closely aligns with the data. The only exception is the halo mass bin $10^{12}M_\odot/h$, which still has significant over-estimation of the tail end, and an underestimation of its peak. A (very) slight overestimation may be expected due to binning of the data, but not to the extend shown in our fits. We are unsure what causes this overestimation, but expect it to be the result of limited numerical precision in the fitting procedure due to many calculations and large function call overheads.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{../figures/03_satellite_galaxies_poisson_fit.png}
+    \caption{Histograms of the  mean number of satellite galaxies per halo mass bin, as function of radial distance $x$. Binned data (black) is overplotted with the best-fitting model (red). In general, we find good agreement with the data, except for mass bin $10^{12}M_\odot/h$, where our fit does not accurately capture the peak of the profile, and where the left tail is overestimated. A slight overestimation is expected due to binning of the data, but not to the extend shown in our result. We are unsure what causes this overestimation, but expect it is the result of limited numerical precision in the fitting procedure due to many calculations and large function call overheads.}
+    \label{fig:Q1c}
+\end{figure}
+
+The full fitting procedure is given in \verb|02SatelliteGalaxyPoisson.py|:
+\lstinputlisting[style=pystyle, language=Python]{../03SatelliteGalaxyPoisson.py}
