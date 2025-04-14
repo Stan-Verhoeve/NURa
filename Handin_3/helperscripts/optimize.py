@@ -276,7 +276,7 @@ def quasi_newton(
 
     for _ in range(max_iters):
         # Recalculate expected error
-        # sm = sigma(x, *p)
+        sm = sigma(x, *p)
 
         # Calculate gradient and step in direction
         gradient = dlogL_dp(data, model, sm, derivatives, p)
