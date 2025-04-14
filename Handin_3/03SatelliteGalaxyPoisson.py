@@ -17,14 +17,17 @@ def main():
     import matplotlib.pyplot as plt
     import time
 
-    ###########################
-    ## Q1b: Gaussian fitting ##
-    ###########################
+    ##########################
+    ## Q1c: Poisson fitting ##
+    ##########################
+    
+    # Store best-fitting parameters to save for later
+    best_fitted_parameters = np.zeros((5,3), dtype="float")
 
     total_time_start = time.time()
     # Create figure
     fig, axs = plt.subplots(3, 2, figsize=(1.5 * 6.4, 1.5 * 8.0))
-
+    
     # Iterate over the files
     for i in range(5):
         pretty_print_title(f"Currently working on satgals_m1{i+1}.txt")
@@ -47,7 +50,7 @@ def main():
 
         # Averagey galaxies per halo
         Nsat = len(radius) / nhalo
-
+        
         #######################
         ## Model preparation ##
         #######################
@@ -95,8 +98,12 @@ def main():
             atol=0.01,
         )
 
+        # Save parameters
+        best_fitted_parameters[i] = params
+
         # Time for information
         fitting_time = time.time() - fitting_time_start
+        print("    Nsat: ", Nsat)
         print(f"    Fitting took {fitting_time:.3f} seconds")
 
         ################
@@ -158,6 +165,10 @@ def main():
     fig.savefig(
         f"figures/03_satellite_galaxies_poisson_fit", bbox_inches="tight", dpi=600
     )
+
+    # Save the parameters
+    np.save("data/best_parameters_poiss", best_fitted_parameters)
+
     stopTime = time.time()
 
     total_time = time.time() - total_time_start

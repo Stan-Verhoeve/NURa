@@ -20,6 +20,9 @@ def main():
     ###########################
     ## Q1b: Gaussian fitting ##
     ###########################
+    
+    # Store best-fitting parameters to save for later
+    best_fitted_parameters = np.zeros((5,3), dtype="float")
 
     total_time_start = time.time()
     # Create figure
@@ -47,7 +50,7 @@ def main():
 
         # Averagey galaxies per halo
         Nsat = len(radius) / nhalo
-
+        
         #######################
         ## Model preparation ##
         #######################
@@ -97,9 +100,13 @@ def main():
             max_iters=20,
             atol=0.01,
         )
+        
+        # Save parameters
+        best_fitted_parameters[i] = params
 
         # Time for information
         fitting_time = time.time() - fitting_time_start
+        print("    Nsat: ", Nsat)
         print(f"    Fitting took {fitting_time:.3f} seconds")
 
         ################
@@ -163,6 +170,10 @@ def main():
     fig.savefig(
         f"figures/02_satellite_galaxies_gaussian_fit", bbox_inches="tight", dpi=600
     )
+
+    # Save the parameters
+    np.save("data/best_parameters_gauss", best_fitted_parameters)
+
     stopTime = time.time()
 
     total_time = time.time() - total_time_start
