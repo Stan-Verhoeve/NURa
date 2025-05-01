@@ -46,7 +46,7 @@ def rejection(
     # Pre-allocate accepted sample array
     accepted = zeros(Nsamples)
     n_accepted = 0
-    
+
     while n_accepted < Nsamples:
         x = U1.uniform(low, high, Nsamples)
         y = U2.uniform(size=Nsamples)

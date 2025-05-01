@@ -5,25 +5,26 @@ import matplotlib.pyplot as plt
 
 def fft(array, N=None):
     array = np.array(array, dtype=np.complex64)
-    
+
     if not N:
         N = array.size
 
     if N > 2:
         even = deepcopy(array[::2])
         odd = deepcopy(array[1::2])
-        
-        array[:N//2] = fft(even, N=N//2)
-        array[N//2:] = fft(odd, N=N//2)
 
-    for k in range(N//2):
+        array[: N // 2] = fft(even, N=N // 2)
+        array[N // 2 :] = fft(odd, N=N // 2)
+
+    for k in range(N // 2):
         exp_term = np.exp(2j * np.pi * k / N)
-        WH = exp_term * array[k + N//2]
+        WH = exp_term * array[k + N // 2]
         t = deepcopy(array[k])
         array[k] = t + WH
-        array[k + N//2] = t - WH
+        array[k + N // 2] = t - WH
 
     return array
+
 
 def ifft(array, N=None):
     array = np.array(array, dtype=np.complex64)
@@ -34,22 +35,25 @@ def ifft(array, N=None):
     if N > 2:
         even = deepcopy(array[::2])
         odd = deepcopy(array[1::2])
-        
-        array[:N//2] = ifft(even, N=N//2)
-        array[N//2:] = ifft(odd, N=N//2)
 
-    for k in range(N//2):
+        array[: N // 2] = ifft(even, N=N // 2)
+        array[N // 2 :] = ifft(odd, N=N // 2)
+
+    for k in range(N // 2):
         exp_term = np.exp(-2j * np.pi * k / N)
-        WH = exp_term * array[k + N//2]
+        WH = exp_term * array[k + N // 2]
         t = deepcopy(array[k])
         array[k] = t + WH
-        array[k + N//2] = t - WH
+        array[k + N // 2] = t - WH
 
     return array
 
+
 xx = np.linspace(0, 20, 1024)
 
-testarray = (2 * xx * np.sin(2 * np.pi * xx / 5) + 3 * np.cos(2 * np.pi * xx / 2)) * np.sin(2 * xx)
+testarray = (
+    2 * xx * np.sin(2 * np.pi * xx / 5) + 3 * np.cos(2 * np.pi * xx / 2)
+) * np.sin(2 * xx)
 test = fft(testarray)
 recon = ifft(test) / test.size
 
