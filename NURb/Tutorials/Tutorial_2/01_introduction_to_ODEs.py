@@ -54,7 +54,7 @@ def main():
     #########
     trange = (0, 20)
     init = [2.0]
-    h = 0.5
+    h = 0.1
     
     time, sols_euler = solve_ivp(system_q1a, trange, init, h, method="euler")
     time, sols_rk4 = solve_ivp(system_q1a, trange, init, h, method="rk4")
