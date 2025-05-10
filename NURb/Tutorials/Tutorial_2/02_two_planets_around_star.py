@@ -15,6 +15,20 @@ def orbital_radius(period, G, M):
     """Orbital radius asusming circular orbits"""
     return (G * M * period ** 2 / (4 * np.pi ** 2)) ** (1/3)
 
+def orbit_to_state(a, e, theta, G, M):
+    """Convert orbit to pos and vel"""
+    r = a * (1 - e ** 2) / (1 + e * np.cos(theta))
+    v = np.sqrt(G * M * (2 / r - 1 / a))
+
+    x = r * np.cos(theta)
+    y = r * np.sin(theta)
+
+    phi = np.arctan2(e * np.sin(theta), 1 + e * np.cos(theta))
+    vx = -v * np.sin(theta + phi)
+    vy = v * np.cos(theta + phi)
+
+    return np.array([x, y, vx, vy])
+
 def grav_acc(r):
     dist = np.sqrt(np.sum(r**2))
     return -G * MSTAR * r / dist ** 3
@@ -43,13 +57,15 @@ def main():
     M2 = 0.011 * MJ
     P1 = 12.
     P2 = 1.
+    e1 = 0.
+    e2 = 0.
 
     # Planet initial conditions
-    r1 = orbital_radius(P1, G, MSTAR)
-    r2 = orbital_radius(P2, G, MSTAR)
-    v1 = np.sqrt(G * MSTAR / r1)
-    v2 = np.sqrt(G * MSTAR / r2)
-    
+    a1 = orbital_radius(P1, G, MSTAR)
+    a2 = orbital_radius(P2, G, MSTAR)
+    init_state1 = orbit_to_state(a1, e1, 0, G, MSTAR)
+    init_state2 = orbit_to_state(a2, e2, 0, G, MSTAR)
+
     # Timings
     dt = 1e-2
     tmax = 120.
@@ -72,14 +88,14 @@ def main():
     state2 = np.zeros((Nsteps, 4))
 
     # Initial conditions
-    pos1_leapfrog[0] = [r1, 0.0]
-    vel1_leapfrog[0] = [0.0, v1]
-    pos2_leapfrog[0] = [r2, 0.0]
-    vel2_leapfrog[0] = [0.0, v2]
+    pos1_leapfrog[0] = init_state1[:2]
+    vel1_leapfrog[0] = init_state1[2:]
+    pos2_leapfrog[0] = init_state2[:2]
+    vel2_leapfrog[0] = init_state2[2:]
 
-    state1[0] = [r1, 0.0, 0.0, v1]
-    state2[0] = [r2, 0.0, 0.0, v2]
-
+    state1[0] = init_state1
+    state2[0] = init_state2
+    
     Etot1_euler[0] = get_energy(state1[0], M1)
     Etot2_euler[0] = get_energy(state2[0], M2)
     Etot1_leapfrog[0] = get_energy(state1[0], M1)
@@ -123,8 +139,8 @@ def main():
         Etot2_leapfrog[i+1] = get_energy(state, M2)
 
     # Euler integration using solve_ivp
-    y0_p1 = [r1, 0, 0, v1]
-    y0_p2 = [r2, 0, 0, v2]
+    y0_p1 = init_state1 # [r1, 0, 0, v1]
+    y0_p2 = init_state2 # [r2, 0, 0, v2]
     __, sols1 = solve_ivp(system, (0,tmax), y0_p1, dt, method="euler")
     __, sols2 = solve_ivp(system, (0,tmax), y0_p2, dt, method="euler")
     
