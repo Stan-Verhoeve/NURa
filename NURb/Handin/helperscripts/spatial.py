@@ -1,6 +1,5 @@
 import numpy as np
 from helperscripts.sorting import merge_sort_indices
-import matplotlib.patches as patches
 from dataclasses import dataclass
 
 @dataclass
@@ -165,43 +164,51 @@ class KDTree:
         if (node.coords[axis] - point[axis])**2 < best[0]:
             self._nn_search(second, point, best)
 
-def plot_tree(ax, node, box=False):
-    if node is None:
-        return
-
-    axis = node.axis_of_split
-    point = node.coords
-    lower_left, upper_right = node.boundary_coords
-    
-    xmin, ymin = lower_left
-    xmax, ymax = upper_right
-    
-    if box:
-        # Width and height of box
-        width = xmax - xmin
-        height = ymax - ymin
-        rect = patches.Rectangle((xmin, ymin), width, height,
-                                 linewidth=1, edgecolor="k", facecolor="none", alpha=0.3)
-        ax.add_patch(rect)
-    else:
-        if axis == 0:
-            ax.plot([point, point], [ymin, ymax], c="k", lw=1.2, alpha=0.3)
-        else:
-            ax.plot([xmin, xmax], [point, point], c="k", lw=1.2, alpha=0.3)
-    
-    plot_tree(ax, node.left_child, box)
-    plot_tree(ax, node.right_child, box)
-
-    return
-
 @dataclass
 class octnode:
     depth: int
-    pos: list[int,...]
-    Mtot: float
-    com: float
-    children: tuple["octnode",...]
+    # index : tuple[int, int, int] # Position in space; grid index
+    pos: list[float, float, float] # Position in space; midpoint of node
+    children: tuple["octnode",...]  # list of 8 children
 
+    # Child logic:
+    # Let us label the children 1-8, and denote `-` when their center is
+    # lower than that of its parent, and `+` when their center is higher 
+    # than that of its parent
+    #     1  2  3  4  5  6  7  8
+    # X : -  -  -  -  +  +  +  +
+    # Y : -  -  +  +  -  -  +  +
+    # Z : -  +  -  +  -  +  -  +
+
+    # So the recursion keeps going down to lower-left-back for its first child,
+    # then move up one for second child, move one right (and down) for third, 
+    # move one up for fourth, etc.
+    
+    # Particle info
+    start_idx : int
+    length: int
+
+    def __repr__(self):
+        def recurse(node, prefix="", is_left=True):
+            if node is None:
+                return prefix + ("└── " if is_left else "├── ") + "None\n"
+
+            node_str = prefix + ("└── " if is_left else "├── ") + f"depth: {node.depth}\n"
+            new_prefix = prefix + ("    " if is_left else "│   ")
+            # node_str += new_prefix + f"aos: {node.axis_of_split}\n"
+            node_str += new_prefix + f"coords: {node.pos}\n"
+            # node_str += new_prefix + f"idx pos: {node.index}\n"
+
+            node_str += new_prefix + f"start idx: {node.start_idx}\n"
+            node_str += new_prefix + f"length: {node.length}\n"
+            # node_str += recurse(node.left_child, new_prefix + "    ", True)
+            for i, child in enumerate(node.children):
+                node_str += new_prefix + f"child {i+1}:\n"
+                node_str += recurse(child, new_prefix + "    ", False)
+
+            return node_str
+
+        return "Octree\n" + recurse(self, "", True)
 
 class octree:
     def __init__(self, data, max_depth):
@@ -209,17 +216,188 @@ class octree:
         self.N, self.dim = self.data.shape
         if self.dim != 3:
             raise ValueError(f"Expected number of dimensions to be 3, not {self.dim}")
-
+        
+        # Node logic
         self.sorted_indices = list(range(self.N))
         self.max_depth = max_depth
+        # Offset direction for each child
+        # Amounts to binary counting to 7
+        self.offsets = np.array([
+            [0, 0, 0],
+            [0, 0, 1],
+            [0, 1, 0],
+            [0, 1, 1],
+            [1, 0, 0],
+            [1, 0, 1],
+            [1, 1, 0],
+            [1, 1, 1],])
+        
+        # Assume normalized coordinates (full volume extends from (0,0,0) to (1,1,1))
+        center = np.array([0.5, 0.5, 0.5])
+        size = 1.0
 
-        self.tree = self._build_tree(0, self.N, 0)
-
-    def _build_tree(self, start, length, depth, bbox=None):
+        self.tree = self._build_tree(center, size, 0, 0, self.N)
+        
+    def _build_tree(self, center, size, depth, start, length):
         if depth > self.max_depth:
             return
         if length <= 0:
             return
         
-        NotImplemented
+        # Midpoint of the current node
+        mid = size / 2
+
+        # Center coordinates
+        cx, cy, cz = center
+
+        # Split particles into their corresponding octants
+        particle_indices = self.sorted_indices[start:start+length]
+        points = self.data[particle_indices]
+        oct_idx = [[] for _ in range(8)]
+        
+        # Look up in which octant particle falls
+        # Use `-` and `+` logic from before
+        
+        # Child  : 1  2  3  4  5  6  7  8
+        # X      : -  -  -  -  +  +  +  +
+        # Y      : -  -  +  +  -  -  +  +
+        # Z      : -  +  -  +  -  +  -  +
+        # Octant : 0  1  2  3  4  5  6  7
+
+        # We check if coordinate is larger than center
+        # This gives a boolean table that we need to map
+        # to octants as described above. In essence, we need
+        # True, True, True --> 7
+        # False, False, False --> 0
+        # Everything else in between
+        # This is just binary counting to 7, where the 
+        # x-coordinate corresponds to the 4 bit, 
+        # y-coordinate corresponds to the 2 bit,
+        # z-coordinate corresponds to the 1 bit
+        # As such, we bit-shift the booleans by 2, 1, 0 respectively
+        # and take logical or to get final binary number
+        bools = points >= center
+        octants = (bools[:,0].astype(int) << 2) | \
+                  (bools[:,1].astype(int) << 1) | \
+                  (bools[:,2].astype(int) << 0)
+
+        for i in range(length):
+            # Add particle indices for this child
+            octant = octants[i]
+            oct_idx[octant].append(particle_indices[i])
+
+        children = np.array([None] * 8)
+        cursor = start
+        for i, offset in enumerate(self.offsets):
+            # Number of particles in this child
+            num = len(oct_idx[i])
+
+            # Update sorted_indices 
+            self.sorted_indices[cursor:cursor+num] = oct_idx[i]
+            
+            # Center point in space coordinates
+            child_center = center + (offset - 0.5) * mid
+            child = self._build_tree(child_center, mid, depth + 1, cursor, num)
+            children[i] = child
+            
+            # Increment start position
+            cursor += num
+
+        return octnode(depth, center, children, start, length)
+
+
+def plot_2Dtree(tree, ax=None, color="k", linedwidth=0.5, box=False):
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as patches
+
+    if ax is None:
+        fig = plt.figure()
+        fig.add_subplot(111)
+    
+    def recurse(node):
+        if node is None:
+            return
+
+        axis = node.axis_of_split
+        point = node.coords
+        lower_left, upper_right = node.boundary_coords
+        
+        xmin, ymin = lower_left
+        xmax, ymax = upper_right
+        
+        if box:
+            # Width and height of box
+            width = xmax - xmin
+            height = ymax - ymin
+            rect = patches.Rectangle((xmin, ymin), width, height,
+                                     linewidth=1, edgecolor=color, facecolor="none")
+            ax.add_patch(rect)
+        else:
+            if axis == 0:
+                ax.plot([point, point], [ymin, ymax], c=color, lw=linewidth)
+            else:
+                ax.plot([xmin, xmax], [point, point], c=color, lw=linewidth)
+        
+        recurse(node.left_child)
+        recurse(node.right_child)
+
+    recurse(tree)
+
+    return
+
+def plot_octree(tree, ax=None, initial_size=1.0, color="k", linewidth=0.5, only_leaves=False):
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d.art3d import Line3DCollection
+    
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+    
+    # Keep track of line objects for cubes
+    lines = []
+
+    def cube_edges(center, size):
+        """Edges of a cube"""
+        c = np.array(center)
+        h = size / 2
+        # Corner coordinates
+        corners = np.array([[x, y, z] for x in [-h, h] for y in [-h, h] for z in [-h, h]])
+        # Translate to center
+        corners += c
+    
+        # Edges defined by their corner indices
+        # Here, (0,1) means the edge going from corner 0 to corner 1, etc.
+        edges = [
+            (0,1), (0,2), (0,4),
+            (1,3), (1,5),
+            (2,3), (2,6),
+            (3,7),
+            (4,5), (4,6),
+            (5,7),
+            (6,7)
+        ]
+        return [(corners[i], corners[j]) for i, j in edges]
+
+    def recurse(node, size):
+        if node is None:
+            return
+        # If all children are None (so no children), we have a leaf
+        is_leaf = all(child is None for child in node.children)
+        # Only add cube if we need to
+        if not only_leaves or is_leaf:
+            lines.extend(cube_edges(node.pos, size))
+        
+        child_size = size / 2
+        for child in node.children:
+            recurse(child, child_size)
+
+    recurse(tree, initial_size)
+
+    # Add lines to a line collection...
+    lc = Line3DCollection(lines, colors=color, linewidths=linewidth)
+    # ...and plot the collection
+    ax.add_collection3d(lc)
+    
+    ax.set_box_aspect([1, 1, 1])
+    # ax.view_init(elev=30, azim=30)
 
