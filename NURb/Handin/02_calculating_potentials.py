@@ -95,7 +95,7 @@ def main():
             xmax = (i + 1) * L / (2**level)
             
             row, col = divmod(i, 2)
-            pcm = ax[row, col].pcolormesh(x, y, massmap[i, :, :])
+            pcm = ax[row, col].pcolormesh(x, y, massmap[i, :, :], shading="auto")
             ax[row, col].set_aspect("equal", "box")
             fig.colorbar(pcm, ax=ax[row, col], label="Total mass inside node")
 
