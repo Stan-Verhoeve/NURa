@@ -41,8 +41,65 @@ def test_octree():
     plot_octree(tree.tree, ax, only_leaves=True)
     fig.savefig(f"figures/test_octree", bbox_inches="tight", dpi=600)
 
+def test_fft():
+    from helperscripts.fft import fft, ifft
+    
+    freq = 5
+    time = np.linspace(0, 1, 1024, endpoint=False)
+    testdata = np.sin(2 * np.pi * time * freq)
 
+    freqs = np.fft.fftfreq(testdata.size, np.mean(np.diff(time)))
+    npFT = np.fft.fft(testdata)
+    FT = fft(testdata)
+    
+    npiFT = np.fft.ifft(npFT)
+    iFT = ifft(FT.copy())
+    
+    fig = plt.figure(figsize=(9,4))
+    ax1 = fig.add_subplot(121)
+    ax2 = fig.add_subplot(122)
+    
+    ax1.plot(np.fft.fftshift(freqs), np.fft.fftshift(np.abs(FT)), label="Own FFT")
+    ax1.plot(np.fft.fftshift(freqs), np.fft.fftshift(np.abs(npFT)), c="gray", lw=5, alpha=0.3, label="np.fft.fft")
+    
+    ax1.set(xlabel="Frequency [Hz]",
+            ylabel="Magnitude",
+            xlim=(-1.5*freq, 1.5*freq))
+    
+    ax2.plot(time, iFT.real, label="Own iFFT")
+    ax2.plot(time, npiFT.real, c="gray", lw=5, alpha=0.3, label="np.fft.ifft")
+
+    ax2.set(xlabel="Time [s]",
+            ylabel="Amplitude",
+            )
+    
+    fig.tight_layout()
+    fig.savefig("figures/test_fft", bbox_inches="tight", dpi=600)
+
+def test_fftn():
+    from helperscripts.fft import fftn, ifftn
+    x = np.linspace(-1, 1, 16)
+    y = np.linspace(-1, 1, 16)
+    # z = np.linspace(-1, 1, 64)
+    xx, yy = np.meshgrid(x, y, sparse=True)
+    sigma = 0.1
+    testdata = 1/(np.sqrt(2*np.pi * sigma**2)) * np.exp(-0.5 * (xx**2 + yy**2) / sigma**2)
+    
+    npfft = np.fft.fftn(testdata)
+    fft = fftn(testdata)
+    
+    npifft = np.fft.ifftn(npfft)
+    ifft = ifftn(fft.copy())
+    
+    tolerance = 1e-6
+    fft_close_to_np = np.all(np.isclose(np.abs(npfft), np.abs(fft), atol=tolerance))
+    ifft_close_to_np = np.all(np.isclose(np.abs(npifft), np.abs(ifft), atol=tolerance))
+    
+    print("FFT close to numpy:", fft_close_to_np)
+    print("iFFT close to numpy:", ifft_close_to_np)
 if __name__ in ("__main__"):
     test_kdtree()
     test_octree()
+    test_fft()
+    test_fftn()
 
