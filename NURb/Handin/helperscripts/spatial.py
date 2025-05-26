@@ -167,7 +167,7 @@ class KDTree:
 @dataclass
 class octnode:
     depth: int
-    # index : tuple[int, int, int] # Position in space; grid index
+    index : tuple[int, int, int] # Position in space; grid index
     pos: list[float, float, float] # Position in space; midpoint of node
     children: tuple["octnode",...]  # list of 8 children
 
@@ -197,7 +197,7 @@ class octnode:
             new_prefix = prefix + ("    " if is_left else "│   ")
             # node_str += new_prefix + f"aos: {node.axis_of_split}\n"
             node_str += new_prefix + f"coords: {node.pos}\n"
-            # node_str += new_prefix + f"idx pos: {node.index}\n"
+            node_str += new_prefix + f"idx pos: {node.index}\n"
 
             node_str += new_prefix + f"start idx: {node.start_idx}\n"
             node_str += new_prefix + f"length: {node.length}\n"
@@ -233,16 +233,17 @@ class octree:
             [1, 1, 1],])
         
         # Assume normalized coordinates (full volume extends from (0,0,0) to (1,1,1))
+        index = np.array([0,0,0])
         center = np.array([0.5, 0.5, 0.5])
         size = 1.0
 
-        self.tree = self._build_tree(center, size, 0, 0, self.N)
+        self.tree = self._build_tree(index, center, size, 0, 0, self.N)
         
-    def _build_tree(self, center, size, depth, start, length):
+    def _build_tree(self, index, center, size, depth, start, length):
         if depth > self.max_depth:
             return
         if length <= 0:
-            return
+           return
         
         # Midpoint of the current node
         mid = size / 2
@@ -295,15 +296,17 @@ class octree:
             # Update sorted_indices 
             self.sorted_indices[cursor:cursor+num] = oct_idx[i]
             
+            # Child index
+            child_index = 2 * index + offset
             # Center point in space coordinates
             child_center = center + (offset - 0.5) * mid
-            child = self._build_tree(child_center, mid, depth + 1, cursor, num)
+            child = self._build_tree(child_index, child_center, mid, depth + 1, cursor, num)
             children[i] = child
             
             # Increment start position
             cursor += num
 
-        return octnode(depth, center, children, start, length)
+        return octnode(depth, index, center, children, start, length)
 
 
 def plot_2Dtree(tree, ax=None, color="k", linedwidth=0.5, box=False):
