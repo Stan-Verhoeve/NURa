@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from helperscripts.spatial import octree, KDTree
+from helperscripts.fft import fftn, ifftn, fftfreq
 import h5py
 
 def get_nodes_at_depth(node, depth):
@@ -24,6 +25,8 @@ def get_nodes_at_depth(node, depth):
     return nodes
 
 def main():
+    np.random.seed(42)
+
     # TODO: Temporary to work on my desktop as well, remove later
     try:
         with h5py.File("/data2/daalen/DMO_a0.1_256.hdf5","r") as handle:
@@ -47,7 +50,15 @@ def main():
     # Scale positions to be in range (0,1)^3
     # TODO: Change tree to work on non-normalized data?
     pos /= L
+
+    # pos = np.random.normal(size=(N, 3))
+    # pos = np.random.rand(N, 3)
+    # pos += np.abs(np.min(pos, axis=0))
+    # pos /= np.max(pos, axis=0)
     
+    ########################
+    ## Q2a, building tree ##
+    ########################
     tree = octree(pos, 7)
     
     # Iterate over the levels
@@ -68,16 +79,16 @@ def main():
             index = node.index
             
             # Extract index; TODO can we do this more elegantly?
-            if index[0] == 0:
+            if index[0] == 0: # * (2**level - 1) // 4:
                 massmap[0, index[1], index[2]] = node.length * mp
             
-            if index[0] == 1:
+            if index[0] == 1: # * (2**level - 1) // 4:
                 massmap[1, index[1], index[2]] = node.length * mp
 
-            if index[0] == 2:
+            if index[0] == 2: # * (2**level - 1) // 4:
                 massmap[2, index[1], index[2]] = node.length * mp
 
-            if index[0] == 3:
+            if index[0] == 3: # * (2**level - 1) // 4:
                 massmap[3, index[1], index[2]] = node.length * mp
         
         
@@ -93,7 +104,9 @@ def main():
             # has width L / (2**level)
             xmin = i * L / (2**level)
             xmax = (i + 1) * L / (2**level)
-            
+            # xmin = (i * L * (2**level - 1) // 4) / (2**level)
+            # xmax = xmin + 1/(2**level)
+
             row, col = divmod(i, 2)
             pcm = ax[row, col].pcolormesh(x, y, massmap[i, :, :], shading="auto")
             ax[row, col].set_aspect("equal", "box")
@@ -104,11 +117,65 @@ def main():
             if col == 0:
                 ax[row, col].set(ylabel="z [Mpc]")
 
-            ax[row, col].set_title(f"Mass distribution in x-range [{xmin:.2f}, {xmax:.2f}] Mpc")
+            ax[row, col].set_title(f"Mass distribution x $\in$ [{xmin:.2f}, {xmax:.2f}] Mpc")
         
         plt.tight_layout()
-        plt.savefig(f"figures/Q2b_level{level}.png",dpi=300)
+        plt.savefig(f"figures/Q2a_level{level}.png",dpi=300)
         plt.close()
+    
+    
+    ##################
+    ## Q2b, fourier ##
+    ##################
+    print("STARTING FOURIER")
+    density = np.zeros((128, 128, 128))
+    leaves = get_nodes_at_depth(tree.tree, 7)
+    leaf_volume = (L / 128) ** 3
 
+    # k-vector in each direction is identical
+    dk = 2 * np.pi / L
+    # TODO: Currently uses fftfreq --> change to own!!
+    k_1d = dk * np.fft.fftfreq(128, 128 / L)
+    kx, ky, kz = np.meshgrid(k_1d, k_1d, k_1d, indexing="ij")
+    k2 = kx**2 + ky**2 + kz**2
+
+    # zero component is mean density, so set k2 to inf to
+    # ensure Fourier becomes zero there
+    k2[0, 0, 0] = np.inf
+
+    # Populate the mass matrix
+    for leaf in leaves:
+        index = leaf.index
+        density[index[0], index[1], index[2]] = leaf.length * mp
+    
+    density /= leaf_volume
+    
+    phi_hat = fftn(density).copy() / k2
+    potential = -G * np.abs(ifftn(phi_hat)) / np.pi
+    potential[0, 0, 0] = 0.
+    
+    # For plotting extent
+    x = np.linspace(0, L, 128)
+    y = np.linspace(0, L, 128)
+
+    # Create figure and plot
+    fig, ax = plt.subplots(2,2, figsize=(10,8))
+    slices = [0, 16, 32, 64]
+    for i in range(4):
+        row, col = divmod(i, 2)
+        pcm = ax[row, col].pcolormesh(x, y, potential[slices[i], :, :], shading="auto")
+        ax[row, col].set_aspect("equal", "box")
+        fig.colorbar(pcm, ax=ax[row, col], label="Potential inside node")
+
+        if row == 1:
+            ax[row, col].set(xlabel="y [Mpc]")
+        if col == 0:
+            ax[row, col].set(ylabel="z [Mpc]")
+
+        ax[row, col].set_title(f"Potential of slice $x_{{{slices[i]}}}$")
+    
+    plt.tight_layout()
+    plt.savefig(f"figures/Q2b_potential.png",dpi=300)
+    plt.close()
 if __name__ in ("__main__"):
     main()
