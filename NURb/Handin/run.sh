@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Start timer
+start_time=$(date +%s.%N)
+
 # Check if folder for figures exists
 if [[ ! -d "figures" ]]; then
 	# If not, create it
@@ -36,8 +39,24 @@ if [[ -n "$1" ]]; then
 
 	# Run script provided in command line
 	python3 $script
+    
+    # Stop timer
+    end_time=$(date +%s.%N)
+    elapsed=$(echo "$end_time - $start_time" | bc)
 
-	# Exit
+    # Round to 3 decimal places
+    elapsed_rounded=$(printf "%.3f" "$elapsed")
+
+    # Compute minutes
+    elapsed_minutes=$(echo "$elapsed / 60" | bc -l)
+    elapsed_minutes_rounded=$(printf "%.3f" "$elapsed_minutes")
+
+    printcmd="Total execution time: $elapsed_rounded seconds, or $elapsed_minutes_rounded minutes"
+    varlength=${#printcmd}
+    printf '%*s\n' "$varlength" '' | tr ' ' '-'
+    echo $printcmd
+	
+    # Exit
 	exit 0
 else
 	# Run all .py scripts in directory
@@ -84,3 +103,19 @@ else
 		echo "No main.tex file found. Skipping compilation..."
 	fi
 fi
+
+# Stop timer
+end_time=$(date +%s.%N)
+elapsed=$(echo "$end_time - $start_time" | bc)
+
+# Round to 3 decimal places
+elapsed_rounded=$(printf "%.3f" "$elapsed")
+
+# Compute minutes
+elapsed_minutes=$(echo "$elapsed / 60" | bc -l)
+elapsed_minutes_rounded=$(printf "%.3f" "$elapsed_minutes")
+
+printcmd="Total execution time: $elapsed_rounded seconds, or $elapsed_minutes_rounded minutes"
+varlength=${#printcmd}
+printf '%*s\n' "$varlength" '' | tr ' ' '-'
+echo $printcmd
