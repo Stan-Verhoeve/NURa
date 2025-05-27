@@ -31,10 +31,29 @@ def fftn(array):
     for axis in range(ndim):
         # In principle, FFTN(A) = FFT(FFT(FFT(A, axis=0), axis=1), axis=2, ...)
         # So we are only interested in the data along a single axis at a time
+        # Also note that each of the axes in the Fourier transform are independent.
+        # This means we can isolate a single axis, and "squash" all the other axes
+        # (or dimensions, if you will) into a single 1D slice, so long as we do this
+        # consistently and correctly unwrap later. This way, we avoid looping
+        # over every other dimension.
+
         # As such, we wish to reshape our array s.t. we have our axis of interest
-        # in one dimension, and all the rest in the other dimension. We can then 
-        # iterate over our axis of interest to perform the 1D fourier tranforms
-        # on the individual 1D slices of the data
+        # in one dimension, as the first axis of the reshaped array, and all the 
+        # other axes squished in the other dimension. We can then iterate over our 
+        # axis of interest to perform the 1D fourier tranforms on the individual 1D 
+        # slices of the data
+
+        # As an example in 3D, instead of doing
+        # for col in range(array.shape[1]):
+        #     for height in range(array.shape[2]):
+        #         fft(array[:, col, height])
+        # 
+        # We instead do
+        # for col in range(reshaped.shape[1]):
+        #     fft(reshaped[:, col])
+
+        # We use np.moveaxis(array, origin, destination) to quickly move the axis
+        # of interest to the front, and reshape to be 2D. 
 
         array = np.moveaxis(array, axis, 0)
         shape = array.shape
