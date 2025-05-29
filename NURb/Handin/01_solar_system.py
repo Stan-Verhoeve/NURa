@@ -87,8 +87,6 @@ def derivatives(t, state):
 def system(t, state):
     N = len(state) // 6
     pos, vel = unflatten_state(state)
-    # pos = state[:3*N].reshape(N,3)
-    # vel = state[3*N:].reshape(N,3)
     acc = grav_acc(pos, MASSES)
     dpos_dt = vel
     dvel_dt = acc
@@ -110,6 +108,8 @@ def get_orbital_energy(state, masses):
     return kinetic + potential
 
 def make_movie(time, positions, savename, duration=30, fps=30, make_3d=False):
+    # TODO: Currently hard-codes zoomed-in portion. Change later??
+
     import subprocess
     Npoints, Nbodies, Ndim = positions.shape
     Nframes = int(duration * fps)
@@ -117,49 +117,61 @@ def make_movie(time, positions, savename, duration=30, fps=30, make_3d=False):
     
     mins = np.min(positions.reshape(-1, Ndim), axis=0)
     maxs = np.max(positions.reshape(-1, Ndim), axis=0)
+    mins_zoom = np.min(positions[:,:5,:].reshape(-1, Ndim), axis=0)
+    maxs_zoom = np.max(positions[:,:5,:].reshape(-1, Ndim), axis=0)
 
     if not make_3d:
-        mins = mins[:-1]
-        maxs = maxs[:-1]
         positions = positions[:,:,:-1]
 
     for fi, idx in enumerate(frame_indices):
         fig = plt.figure(figsize=(6, 6))
-        ax = fig.add_subplot(111, projection="3d" if make_3d else None)
+        ax1 = fig.add_subplot(121, projection="3d" if make_3d else None)
+        ax2 = fig.add_subplot(122, projection="3d" if make_3d else None)
         
-        ax.set_xlim(mins[0], maxs[0])
-        ax.set_ylim(mins[1], maxs[1])
+        ax1.set_xlim(mins[0], maxs[0])
+        ax1.set_ylim(mins[1], maxs[1])
+        ax2.set_xlim(mins_zoom[0], maxs_zoom[0])
+        ax2.set_ylim(mins_zoom[1], maxs_zoom[1])
+
+        ax1.set_xlabel("X [AU]")
+        ax1.set_ylabel("Y [AU]")
+        ax2.set_xlabel("X [AU]")
+        ax2.set_ylabel("Y [AU]")
         
-        ax.set_xlabel("X [AU]")
-        ax.set_ylabel("Y [AU]")
         if make_3d:
-            ax.set_zlim(mins[2], maxs[2])
-            ax.set_zlabel("Z [AU]")
+            ax1.set_zlim(mins[2], maxs[2])
+            ax2.set_zlim(mins_zoom[2], maxs_zoom[2])
+            
+            ax1.set_zlabel("Z [AU]")
+            ax2.set_zlabel("Z [AU]")
+            
             angle = 360 * fi / Nframes
-            ax.view_init(elev=30, azim=angle)
+            ax1.view_init(elev=30, azim=angle)
+            ax2.view_init(elev=30, azim=angle)
         
         for i in range(Nbodies):
             trail = positions[:idx+1, i]
             curr = positions[idx, i]
             
-            # ax.plot(*trail.T, alpha=0.3)
-            # ax.scatter(*curr.T, s=10)
+            ax1.plot(*trail.T, alpha=0.3)
+            ax1.scatter(*curr.T, s=10)
 
-            if make_3d:
-                ax.plot(trail[:, 0], trail[:, 1], trail[:, 2], alpha=0.3)
-                ax.scatter(curr[0], curr[1], curr[2], s=10)
-            else:
-                ax.plot(trail[:, 0], trail[:, 1], alpha=0.3)
-                ax.scatter(curr[0], curr[1], s=10)
+            if i < 5:
+                ax2.plot(*trail.T, alpha=0.3)
+                ax2.scatter(*curr.T, s=10)
         
-        ax.set_title(f"t = {time[idx]:.2f} years")
-        plt.tight_layout()
+        ax1.set_title("All planets")
+        ax2.set_title("4 innermost planets")
+        fig.suptitle(f"t = {time[idx]:.2f} years")
+        fig.tight_layout()
         plt.savefig(f"figures/movie/frame_{fi:04d}.png", dpi=300)
         plt.close(fig)
         
     
     if ".mp4" not in savename:
         savename += ".mp4"
+    
+    # TODO: Move this to ./run.sh??
     # Actually build the movie
     subprocess.run(["ffmpeg", "-framerate", f"{fps}", 
                               "-i", "figures/movie/frame_%04d.png",
@@ -278,6 +290,6 @@ def main():
     ## Bonus ##
     ###########
     # make_movie(time, lf_positions[:,:5,:], "figures/Q1_movie_2d.mp4", duration=10, make_3d=False)
-    make_movie(time, lf_positions[:,:5,:], "figures/Q1_movie_3d.mp4", duration=10, make_3d=True)
+    make_movie(time, lf_positions, "figures/Q1_movie_3d.mp4", duration=10, make_3d=True)
 if __name__ in ("__main__"):
     main()
