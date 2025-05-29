@@ -128,22 +128,25 @@ def main():
     ## Q2b, fourier ##
     ##################
     print("STARTING FOURIER")
-    density = np.zeros((128, 128, 128))
-    leaves = get_nodes_at_depth(tree.tree, 7)
-    leaf_volume = (L / 128) ** 3
+    level = 7
+    density = np.zeros((2**level, 2**level, 2**level))
+    leaves = get_nodes_at_depth(tree.tree, level)
+    leaf_volume = (L / (2**level)) ** 3
 
     # k-vector in each direction is identical
-    dk = 2 * np.pi / L
+    # Wave vector is given by k = 2pi/lambda
     # TODO: Currently uses fftfreq --> change to own!!
-    k_1d = dk * np.fft.fftfreq(128, 128 / L)
-    kx, ky, kz = np.meshgrid(k_1d, k_1d, k_1d, indexing="ij")
+    k_1d = 2 * np.pi * np.fft.fftfreq(2**level, 2**level / L)
+    kx, ky, kz = np.meshgrid(k_1d, k_1d, k_1d) #, indexing="ij")
     k2 = kx**2 + ky**2 + kz**2
-
+    
+    # TODO: Is this correct? Avoids div-by-zero, but is the 
+    #       physics still correct here?
     # zero component is mean density, so set k2 to inf to
     # ensure Fourier becomes zero there
     k2[0, 0, 0] = np.inf
 
-    # Populate the mass matrix
+    # Populate the density matrix
     for leaf in leaves:
         index = leaf.index
         density[index[0], index[1], index[2]] = leaf.length * mp
@@ -151,19 +154,21 @@ def main():
     density /= leaf_volume
     
     phi_hat = fftn(density).copy() / k2
-    potential = -G * np.abs(ifftn(phi_hat)) / np.pi
+    potential = -G * np.real(ifftn(phi_hat)) / np.pi
     potential[0, 0, 0] = 0.
     
     # For plotting extent
-    x = np.linspace(0, L, 128)
-    y = np.linspace(0, L, 128)
+    x = np.linspace(0, L, 2**level)
+    y = np.linspace(0, L, 2**level)
 
     # Create figure and plot
     fig, ax = plt.subplots(2,2, figsize=(10,8))
     slices = [0, 16, 32, 64]
     for i in range(4):
+        # Multiply by sign to get 0 for i=0
+        slice_idx = np.sign(i) * 2**level // (2**(4-i))
         row, col = divmod(i, 2)
-        pcm = ax[row, col].pcolormesh(x, y, potential[slices[i], :, :], shading="auto")
+        pcm = ax[row, col].pcolormesh(x, y, potential[slice_idx, :, :], shading="auto")
         ax[row, col].set_aspect("equal", "box")
         fig.colorbar(pcm, ax=ax[row, col], label="Potential inside node")
 
@@ -172,10 +177,11 @@ def main():
         if col == 0:
             ax[row, col].set(ylabel="z [Mpc]")
 
-        ax[row, col].set_title(f"Potential of slice $x_{{{slices[i]}}}$")
+        ax[row, col].set_title(f"Potential of slice $x_{{{slice_idx}}}$")
     
     plt.tight_layout()
     plt.savefig(f"figures/Q2b_potential.png",dpi=300)
     plt.close()
+
 if __name__ in ("__main__"):
     main()
