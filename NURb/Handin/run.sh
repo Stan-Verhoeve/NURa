@@ -8,10 +8,12 @@ if [[ ! -d "figures" ]]; then
 	# If not, create it
 	echo "Creating 'figures' directory..."
 	mkdir figures
+    mkdir figures/movie
 else
 	# If so, clear it
 	echo "'figures' directory already exists. Now clearing..."
 	rm -rf figures/*
+    mkdir figures/movie
 fi
 
 # Check if folder for txt exists
