@@ -97,9 +97,28 @@ def test_fftn():
     
     print("FFT close to numpy:", fft_close_to_np)
     print("iFFT close to numpy:", ifft_close_to_np)
-if __name__ in ("__main__"):
-    test_kdtree()
-    test_octree()
-    test_fft()
-    test_fftn()
 
+def test_quasi():
+    from helperscripts.optimize import quasi_newton
+
+    # Example function: f(x) = (x1 - 2)^2 + (x2 + 3)^2
+    
+    def f(p):
+        return (p[0] - 2)**2 + (p[1] + 3)**2
+
+    # Gradient of f
+    def grad_f(p):
+        return np.array([2 * (p[0] - 2), 2 * (p[1] + 3)])
+
+    # Initial guess
+    p0 = np.array([0.0, 0.0])
+
+    opt_p = quasi_newton(f, grad_f, p0)
+    print("Optimal parameters:", opt_p)
+
+if __name__ in ("__main__"):
+    # test_kdtree()
+    # test_octree()
+    # test_fft()
+    # test_fftn()
+    test_quasi()
