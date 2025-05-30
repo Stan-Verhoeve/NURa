@@ -60,6 +60,8 @@ def confusion(y_true, y_pred):
 
 def main():
     from helperscripts.optimize import quasi_newton
+    import itertools
+
     data, M, labels = parse_data("galaxy_data.txt")
     M_scaled = scale_features(M)
     
@@ -75,7 +77,11 @@ def main():
     grad_f = lambda theta: cost_grad(theta, M_scaled, labels)
     
     # Find optimal theta
-    theta_opt, cost_history = quasi_newton(f, grad_f, theta_init, max_iters=1000, atol=1e-8)
+    theta_opt, theta_history = quasi_newton(f, grad_f, theta_init, max_iters=1000, atol=1e-8)
+    
+    cost_history = np.zeros(theta_history.shape[0])
+    for i in range(cost_history.size):
+        cost_history[i] = cost(theta_history[i], M_scaled, labels)
     
     fig = plt.figure()
     ax =fig.add_subplot(111)
@@ -97,5 +103,24 @@ def main():
     print("Precision:", precision)
     print("Recall:", recall)
     print("F1:", F1)
+    
+    ################
+    ## Problem 3c ##
+    ################
+
+    # TODO: Determine decision boundary
+    # In principle, this is at sigmoid(z) == 0.5 --> z == 0
+    # and z == theta @ X, so theta @ X == 0 is the decision boundary
+    # However, this is boundary is N-space. How to reduce to 2D?
+    # Fix other params at what value? Project into 2D?
+    fig, ax = plt.subplots(3,2,figsize=(10,15))
+    names = [r'$\kappa_{CO}$', 'Color', 'Extended', 'Emission line flux']
+    plot_idx = [[0,0], [0,1], [1,0], [1,1], [2,0], [2,1]]
+    for i, comb in enumerate(itertools.combinations(np.arange(0,4), 2)):
+        ax[plot_idx[i][0],plot_idx[i][1]].scatter(M_scaled[:,comb[0]], M_scaled[:,comb[1]], c=labels)
+        ax[plot_idx[i][0],plot_idx[i][1]].set(xlabel=names[comb[0]], ylabel=names[comb[1]])
+        ax[plot_idx[i][0],plot_idx[i][1]].plot([0.5,0.5],[0,1], 'k--')
+    plt.savefig("figures/Q3c", bbox_inches="tight", dpi=600)
+    plt.close()
 if __name__ in ("__main__"):
     main()
