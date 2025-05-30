@@ -3,6 +3,12 @@
 # Start timer
 start_time=$(date +%s.%N)
 
+# Check if 'galaxy_data.txt' exists
+if [[ ! -f "galaxy_data.txt" ]]; then
+	echo "galaxy_data.txt does not exist. Grabbing..."
+    wget https://home.strw.leidenuniv.nl/~daalen/Handin_files/galaxy_data.txt
+fi
+
 # Check if folder for figures exists
 if [[ ! -d "figures" ]]; then
 	# If not, create it
