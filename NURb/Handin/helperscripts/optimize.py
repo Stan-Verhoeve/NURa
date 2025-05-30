@@ -9,7 +9,7 @@ def quasi_newton(
 ):
     p = np.array(p0)
     H = np.eye(len(p))
-    history = np.zeros(max_iters)
+    theta_history = np.zeros((max_iters, len(p)))
 
     for i in range(max_iters):
         grad = grad_f(p)
@@ -48,7 +48,7 @@ def quasi_newton(
         )
 
         p = p_new
-        history[i] = f(p)
+        theta_history[i] = p
 
-    return p, history[:i]
+    return p, theta_history[:i]
 
