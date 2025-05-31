@@ -37,7 +37,7 @@ def cost(theta, X, y):
     # Hypothesis
     h = sigmoid(z)
 
-    return -np.mean(y * np.log(h) + (1-y) * np.log(1-h))
+    return -np.sum(y * np.log(h) + (1-y) * np.log(1-h)) / m
 
 def cost_grad(theta, X, y):
     m = len(y)
@@ -64,7 +64,7 @@ def main():
 
     data, M, labels = parse_data("galaxy_data.txt")
     M_scaled = scale_features(M)
-    
+
     # Plot features
     plot_features(M, "figures/Q3a_unscaled")
     plot_features(M_scaled, "figures/Q3a_scaled")
@@ -96,7 +96,7 @@ def main():
             cost_history[j] = cost(curr_theta, M_scaled, labels)
         
 
-        ax.plot(cost_history, label=f"{names[comb[0]]} + {names[comb[1]]}")
+        ax.plot(np.arange(1, len(cost_history) + 1), cost_history, label=f"{names[comb[0]]} + {names[comb[1]]}")
         ax.set(xlabel="Iteration", 
                ylabel=r"J($\theta$)",
                title="Cost function convergence",
@@ -104,15 +104,20 @@ def main():
         ax.legend()
     plt.savefig("figures/Q3b", bbox_inches="tight", dpi=600)
     plt.close()
-
-    # ax =fig.add_subplot(111)
-    # ax.plot(cost_history)
-    # ax.set(xlabel="Iteration",
-    #        ylabel=r"J($\theta$)",
-    #        title="Cost function convergence",
-    #        )
-    # fig.savefig("figures/Q3b_full_history", bbox_inches="tight", dpi=600)
-    # plt.close()
+    
+    
+    for i in range(cost_history.size):
+        cost_history[i] = cost(theta_history[i], M_scaled, labels)
+    
+    fig = plt.figure()
+    ax =fig.add_subplot(111)
+    ax.plot(np.arange(1, len(cost_history) + 1), cost_history)
+    ax.set(xlabel="Iteration",
+           ylabel=r"J($\theta$)",
+           title="Cost function convergence",
+           )
+    fig.savefig("figures/Q3b_full_history", bbox_inches="tight", dpi=600)
+    plt.close()
 
     # Get model predictions
     predicted = prediction(theta_opt, M_scaled)
