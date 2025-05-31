@@ -79,19 +79,40 @@ def main():
     # Find optimal theta
     theta_opt, theta_history = quasi_newton(f, grad_f, theta_init, max_iters=1000, atol=1e-8)
     
-    cost_history = np.zeros(theta_history.shape[0])
-    for i in range(cost_history.size):
-        cost_history[i] = cost(theta_history[i], M_scaled, labels)
     
-    fig = plt.figure()
-    ax =fig.add_subplot(111)
-    ax.plot(cost_history)
-    ax.set(xlabel="Iteration",
-           ylabel=r"J($\theta$)",
-           title="Cost function convergence",
-           )
-    fig.savefig("figures/Q3b_full_history", bbox_inches="tight", dpi=600)
+    ################
+    ## Problem 3b ##
+    ################
+    # fig, ax = plt.subplots(3,2,figsize=(10,15))
+    fig, ax = plt.subplots(1, 1)
+    names = [r'$\kappa_{CO}$', 'Color', 'Extended', 'Emission line flux']
+    plot_idx = [[0,0], [0,1], [1,0], [1,1], [2,0], [2,1]]
+    for i, comb in enumerate(itertools.combinations(np.arange(0,4), 2)):
+        cost_history = np.zeros(theta_history.shape[0])
+        for j in range(cost_history.size):
+            curr_theta = np.ones(4)
+            # Set theta for combination to their best-fit
+            curr_theta[np.asarray(comb)] = theta_history[j, comb]
+            cost_history[j] = cost(curr_theta, M_scaled, labels)
+        
+
+        ax.plot(cost_history, label=f"{names[comb[0]]} + {names[comb[1]]}")
+        ax.set(xlabel="Iteration", 
+               ylabel=r"J($\theta$)",
+               title="Cost function convergence",
+               )
+        ax.legend()
+    plt.savefig("figures/Q3b", bbox_inches="tight", dpi=600)
     plt.close()
+
+    # ax =fig.add_subplot(111)
+    # ax.plot(cost_history)
+    # ax.set(xlabel="Iteration",
+    #        ylabel=r"J($\theta$)",
+    #        title="Cost function convergence",
+    #        )
+    # fig.savefig("figures/Q3b_full_history", bbox_inches="tight", dpi=600)
+    # plt.close()
 
     # Get model predictions
     predicted = prediction(theta_opt, M_scaled)
@@ -117,9 +138,21 @@ def main():
     names = [r'$\kappa_{CO}$', 'Color', 'Extended', 'Emission line flux']
     plot_idx = [[0,0], [0,1], [1,0], [1,1], [2,0], [2,1]]
     for i, comb in enumerate(itertools.combinations(np.arange(0,4), 2)):
+        # Decision boundary is where sigmoid(z) == 0.5 --> z == 0
+        # This boils down to theta @ X == 0; for our four features,
+        # theta1 x1 + theta2 x2 + theta3 x3 + theta4 x4 == 0
+        # The boundary is those x for which this is true; this boundary
+        # is a hypersurface (4D, in this case). To plot 2D boundary, we 
+        # fix the two features we're not plotting to zero, s.t. we have
+        # the line theta1 x1 + theta2 x2 == 0 --> x2 = -theta1 / theta2 x1
+        # where x1 is the feature plotted on the horizontal axis
+        curr_horizontal_feat = M_scaled[:,comb[0]]
+        boundary_x = np.linspace(curr_horizontal_feat.min(), curr_horizontal_feat.max(), 1000)
+        decision_boundary = -(theta_opt[comb[0]] / theta_opt[comb[1]]) * boundary_x
+
         ax[plot_idx[i][0],plot_idx[i][1]].scatter(M_scaled[:,comb[0]], M_scaled[:,comb[1]], c=labels)
         ax[plot_idx[i][0],plot_idx[i][1]].set(xlabel=names[comb[0]], ylabel=names[comb[1]])
-        ax[plot_idx[i][0],plot_idx[i][1]].plot([0.5,0.5],[0,1], 'k--')
+        ax[plot_idx[i][0],plot_idx[i][1]].plot(boundary_x, decision_boundary, 'k--')
     plt.savefig("figures/Q3c", bbox_inches="tight", dpi=600)
     plt.close()
 if __name__ in ("__main__"):
