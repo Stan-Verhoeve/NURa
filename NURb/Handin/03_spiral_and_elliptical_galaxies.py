@@ -64,9 +64,11 @@ def confusion(y_true, y_pred):
 
 def export_to_latex(filename, y_true, y_pred):
     TP, TN, FP, FN = confusion(y_true, y_pred)
+    accuracy = (TP + TN) / (TP + TN + FP + FN)
     precision = TP / (TP + FP)
     recall = TP / (TP + FN)
     F1 = 2 * (precision * recall) / (precision + recall)
+
     lines = [
         r"\begin{table}[h]",
         r"\centering",
@@ -77,11 +79,12 @@ def export_to_latex(filename, y_true, y_pred):
         fr"\multirow{{2}}{{*}}{{\textbf{{Prediction}}}} & \textbf{{P}} & {TP} & {FP} \\",
         fr"                                     & \textbf{{N}} & {FN} & {TN} \\",
         r"\hline",
+        fr"\multicolumn{{2}}{{c|}}{{Accuracy}}  & \multicolumn{{2}}{{c}}{{{accuracy:.2f}}} \\",
         fr"\multicolumn{{2}}{{c|}}{{Precision}} & \multicolumn{{2}}{{c}}{{{precision:.2f}}} \\",
         fr"\multicolumn{{2}}{{c|}}{{Recall}}    & \multicolumn{{2}}{{c}}{{{recall:.2f}}} \\",
         fr"\multicolumn{{2}}{{c|}}{{F1 Score}}  & \multicolumn{{2}}{{c}}{{{F1:.2f}}} \\",
         r"\end{tabular}",
-        r"\caption{Confusion matrix with precision, recall, and F1 score.}",
+        r"\caption{Confusion matrix with accuracy, precision, recall, and F1 score.}",
         r"\label{tab:confusion_metrics}",
         r"\end{table}"
     ]
@@ -158,9 +161,11 @@ def main():
     
     export_to_latex("OUT/confusion_matrix.tex", labels, predicted)
     TP, TN, FP, FN = confusion(labels, predicted)
+    accuracy = (TP + TN) / (TP + TN + FP + FN)
     precision = TP / (TP + FP)
     recall = TP / (TP + FN)
     F1 = 2 * (precision * recall) / (precision + recall)
+    print("Accuracy:", accuracy)
     print("Precision:", precision)
     print("Recall:", recall)
     print("F1:", F1)
