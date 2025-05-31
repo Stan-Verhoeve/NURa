@@ -72,7 +72,7 @@ def export_to_latex(filename, y_true, y_pred):
     lines = [
         r"\begin{table}[h]",
         r"\centering",
-        r"\begin{tabular}{c|ccc}",
+        r"\begin{tabular}{cc|cc}",
         r"\textbf{} & \textbf{} & \multicolumn{2}{c}{\textbf{Truth}} \\",
         r"\textbf{} & \textbf{} & \textbf{P} & \textbf{N} \\",
         r"\hline",
