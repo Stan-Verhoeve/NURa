@@ -8,11 +8,15 @@ def parse_data(file):
     labels = data[:, -1]
     return data, feature_matrix, labels
 
-def scale_features(feature_matrix):
+def scale_features(feature_matrix, save=None):
     means = np.mean(feature_matrix, axis=0)
     stds = np.std(feature_matrix, axis=0)
     
-    return (feature_matrix - means) / stds
+    scaled = (feature_matrix - means) / stds
+
+    if save:
+        np.savetxt(save, scaled)
+    return scaled
 
 def plot_features(features, savename):
     fig, ax = plt.subplots(2,2, figsize=(10,8))
@@ -58,12 +62,39 @@ def confusion(y_true, y_pred):
 
     return TP, TN, FP, FN
 
+def export_to_latex(filename, y_true, y_pred):
+    TP, TN, FP, FN = confusion(y_true, y_pred)
+    precision = TP / (TP + FP)
+    recall = TP / (TP + FN)
+    F1 = 2 * (precision * recall) / (precision + recall)
+    lines = [
+        r"\begin{table}[h]",
+        r"\centering",
+        r"\begin{tabular}{c|ccc}",
+        r"\textbf{} & \textbf{} & \multicolumn{2}{c}{\textbf{Truth}} \\",
+        r"\textbf{} & \textbf{} & \textbf{P} & \textbf{N} \\",
+        r"\hline",
+        fr"\multirow{{2}}{{*}}{{\textbf{{Prediction}}}} & \textbf{{P}} & {TP} & {FP} \\",
+        fr"                                     & \textbf{{N}} & {FN} & {TN} \\",
+        r"\hline",
+        fr"\multicolumn{{2}}{{c|}}{{Precision}} & \multicolumn{{2}}{{c}}{{{precision:.2f}}} \\",
+        fr"\multicolumn{{2}}{{c|}}{{Recall}}    & \multicolumn{{2}}{{c}}{{{recall:.2f}}} \\",
+        fr"\multicolumn{{2}}{{c|}}{{F1 Score}}  & \multicolumn{{2}}{{c}}{{{F1:.2f}}} \\",
+        r"\end{tabular}",
+        r"\caption{Confusion matrix with precision, recall, and F1 score.}",
+        r"\label{tab:confusion_metrics}",
+        r"\end{table}"
+    ]
+
+    with open(filename, "w") as f:
+        f.write("\n".join(lines))
+
 def main():
     from helperscripts.optimize import quasi_newton
     import itertools
 
     data, M, labels = parse_data("galaxy_data.txt")
-    M_scaled = scale_features(M)
+    M_scaled = scale_features(M, save="OUT/galaxy_data_scaled.txt")
 
     # Plot features
     plot_features(M, "figures/Q3a_unscaled")
@@ -88,15 +119,17 @@ def main():
     names = [r'$\kappa_{CO}$', 'Color', 'Extended', 'Emission line flux']
     plot_idx = [[0,0], [0,1], [1,0], [1,1], [2,0], [2,1]]
     for i, comb in enumerate(itertools.combinations(np.arange(0,4), 2)):
-        cost_history = np.zeros(theta_history.shape[0])
-        for j in range(cost_history.size):
+        comb = np.array(comb)
+        cost_history = np.zeros(theta_history.shape[0] + 1)
+        cost_history[0] = cost(theta_init, M_scaled, labels)
+        for j in range(cost_history.size - 1):
             curr_theta = np.ones(4)
             # Set theta for combination to their best-fit
-            curr_theta[np.asarray(comb)] = theta_history[j, comb]
-            cost_history[j] = cost(curr_theta, M_scaled, labels)
+            curr_theta[comb] = theta_history[j, comb]
+            cost_history[j + 1] = cost(curr_theta, M_scaled, labels)
         
 
-        ax.plot(np.arange(1, len(cost_history) + 1), cost_history, label=f"{names[comb[0]]} + {names[comb[1]]}")
+        ax.plot(cost_history, label=f"{names[comb[0]]} + {names[comb[1]]}")
         ax.set(xlabel="Iteration", 
                ylabel=r"J($\theta$)",
                title="Cost function convergence",
@@ -105,13 +138,14 @@ def main():
     plt.savefig("figures/Q3b", bbox_inches="tight", dpi=600)
     plt.close()
     
-    
-    for i in range(cost_history.size):
-        cost_history[i] = cost(theta_history[i], M_scaled, labels)
+    cost_history = np.zeros(theta_history.shape[0] + 1)
+    cost_history[0] = cost(theta_init, M_scaled, labels)
+    for i in range(cost_history.size - 1):
+        cost_history[i + 1] = cost(theta_history[i], M_scaled, labels)
     
     fig = plt.figure()
     ax =fig.add_subplot(111)
-    ax.plot(np.arange(1, len(cost_history) + 1), cost_history)
+    ax.plot(cost_history)
     ax.set(xlabel="Iteration",
            ylabel=r"J($\theta$)",
            title="Cost function convergence",
@@ -121,7 +155,8 @@ def main():
 
     # Get model predictions
     predicted = prediction(theta_opt, M_scaled)
-
+    
+    export_to_latex("OUT/confusion_matrix.tex", labels, predicted)
     TP, TN, FP, FN = confusion(labels, predicted)
     precision = TP / (TP + FP)
     recall = TP / (TP + FN)
@@ -153,7 +188,7 @@ def main():
         # where x1 is the feature plotted on the horizontal axis
         curr_horizontal_feat = M_scaled[:,comb[0]]
         boundary_x = np.linspace(curr_horizontal_feat.min(), curr_horizontal_feat.max(), 1000)
-        decision_boundary = -(theta_opt[comb[0]] / theta_opt[comb[1]]) * boundary_x
+        decision_boundary = -(theta_opt[comb[0]] * boundary_x) / theta_opt[comb[1]]
 
         ax[plot_idx[i][0],plot_idx[i][1]].scatter(M_scaled[:,comb[0]], M_scaled[:,comb[1]], c=labels)
         ax[plot_idx[i][0],plot_idx[i][1]].set(xlabel=names[comb[0]], ylabel=names[comb[1]])
