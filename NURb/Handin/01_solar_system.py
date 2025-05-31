@@ -27,7 +27,9 @@ def get_solar_initial(t):
     system = np.zeros((len(NAMES), 2, 3))
 
     # Initialize planets
-    with solar_system_ephemeris.set("jpl"):
+    # TODO: Because vdesk doesn't like jpl
+    # with solar_system_ephemeris.set("jpl"):
+    with solar_system_ephemeris.set("builtin"):
         for i, name in enumerate(NAMES):
             pos, vel = get_body_barycentric_posvel(name, t)
             system[i,0,:] = pos.xyz.to_value(u.AU)
@@ -164,7 +166,9 @@ def make_movie(time, positions, savename, duration=30, fps=30, make_3d=False):
         ax2.set_title("4 innermost planets")
         fig.suptitle(f"t = {time[idx]:.2f} years")
         fig.tight_layout()
-        plt.savefig(f"figures/movie/frame_{fi:04d}.png", dpi=300)
+        # TODO: because vdesk is slow
+        # plt.savefig(f"figures/movie/frame_{fi:04d}.png", dpi=300)
+        plt.savefig(f"figures/movie/frame_{fi:04d}.png", dpi=100)
         plt.close(fig)
         
     
@@ -227,8 +231,9 @@ def main():
     lf_positions[0] = initial_system[:,0,:]
     lf_velocities[0] = initial_system[:,1,:]
     rk_states[0] = flatten_state(initial_system[:,0,:], initial_system[:,1,:])
-    rk_energy[0] = get_orbital_energy(rk_states[0], MASSES)
-    lf_energy[0] = get_orbital_energy(rk_states[0], MASSES)
+    # TODO: because vdesk is slow
+    # rk_energy[0] = get_orbital_energy(rk_states[0], MASSES)
+    # lf_energy[0] = get_orbital_energy(rk_states[0], MASSES)
     
     for i in range(Nsteps-1):
         ##############
@@ -240,14 +245,17 @@ def main():
         acc_new = grav_acc(lf_positions[i+1], MASSES)
         lf_velocities[i+1] = vel_half + 0.5 * dt * acc_new
 
-        lf_state = flatten_state(lf_positions[i+1], lf_velocities[i+1])
-        lf_energy[i+1] = get_orbital_energy(lf_state, MASSES)
+        # TODO: because vdesk is slow
+        # lf_state = flatten_state(lf_positions[i+1], lf_velocities[i+1])
+        # lf_energy[i+1] = get_orbital_energy(lf_state, MASSES)
 
         #########
         ## RK4 ##
         #########
         rk_states[i+1] = rk4_single(system, time[i], rk_states[i], dt)
-        rk_energy[i+1] = get_orbital_energy(rk_states[i+1], MASSES)
+        
+        # TODO: because vdesk is slow
+        # rk_energy[i+1] = get_orbital_energy(rk_states[i+1], MASSES)
         
     # Convert 1D state to positions and velocities
     rk_positions = rk_states[:, :3*Nobj].reshape(Nsteps, -1, 3)
@@ -269,7 +277,7 @@ def main():
         ax[2].plot(time, abs_diff, label=obj, alpha=0.3)
     ax[0].set(xlabel="Time [yr]", ylabel="X [AU]", title="Leapfrog")
     ax[1].set(xlabel="Time [yr]", ylabel="X [AU]", title="RK4")
-    ax[2].set(xlabel="Time [yr]", ylabel=r"|$x_\text{RK} - x_\text{LF}$|", title="Diffence between methods")
+    ax[2].set(xlabel="Time [yr]", ylabel=r"|$x_{RK} - x_{LF}$|", title="Diffence between methods")
     plt.legend(loc=(1.05,0))
     plt.savefig("figures/Q1c_comparison", bbox_inches="tight", dpi=600)
     plt.close()
