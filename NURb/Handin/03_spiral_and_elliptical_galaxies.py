@@ -74,15 +74,15 @@ def export_to_latex(filename, y_true, y_pred):
         r"\centering",
         r"\begin{tabular}{cc|cc}",
         r"\textbf{} & \textbf{} & \multicolumn{2}{c}{\textbf{Truth}} \\",
-        r"\textbf{} & \textbf{} & \textbf{P} & \textbf{N} \\",
+        r"\textbf{} &            & \textbf{P} & \textbf{N} \\",
         r"\hline",
-        fr"\multirow{{2}}{{*}}{{\textbf{{Prediction}}}} & \textbf{{P}} & {TP} & {FP} \\",
-        fr"                                     & \textbf{{N}} & {FN} & {TN} \\",
+        r"\textbf{Prediction} & \textbf{P} & " + f"{TP} & {FP} \\\\",
+        r"                   & \textbf{N} & " + f"{FN} & {TN} \\\\",
         r"\hline",
-        fr"\multicolumn{{2}}{{c|}}{{Accuracy}}  & \multicolumn{{2}}{{c}}{{{accuracy:.2f}}} \\",
-        fr"\multicolumn{{2}}{{c|}}{{Precision}} & \multicolumn{{2}}{{c}}{{{precision:.2f}}} \\",
-        fr"\multicolumn{{2}}{{c|}}{{Recall}}    & \multicolumn{{2}}{{c}}{{{recall:.2f}}} \\",
-        fr"\multicolumn{{2}}{{c|}}{{F1 Score}}  & \multicolumn{{2}}{{c}}{{{F1:.2f}}} \\",
+        fr"\multicolumn{{2}}{{c|}}{{Accuracy}}  & \multicolumn{{2}}{{c}}{{{accuracy:.3f}}} \\",
+        fr"\multicolumn{{2}}{{c|}}{{Precision}} & \multicolumn{{2}}{{c}}{{{precision:.3f}}} \\",
+        fr"\multicolumn{{2}}{{c|}}{{Recall}}    & \multicolumn{{2}}{{c}}{{{recall:.3f}}} \\",
+        fr"\multicolumn{{2}}{{c|}}{{F1 Score}}  & \multicolumn{{2}}{{c}}{{{F1:.3f}}} \\",
         r"\end{tabular}",
         r"\caption{Confusion matrix with accuracy, precision, recall, and F1 score.}",
         r"\label{tab:confusion_metrics}",
@@ -91,6 +91,28 @@ def export_to_latex(filename, y_true, y_pred):
 
     with open(filename, "w") as f:
         f.write("\n".join(lines))
+    # lines = [
+    #     r"\begin{table}[h]",
+    #     r"\centering",
+    #     r"\begin{tabular}{cc|cc}",
+    #     r"\textbf{} & \textbf{} & \multicolumn{2}{c}{\textbf{Truth}} \\",
+    #     r"\textbf{} & \textbf{} & \textbf{P} & \textbf{N} \\",
+    #     r"\hline",
+    #     fr"\multirow{{2}}{{*}}{{\textbf{{Prediction}}}} & \textbf{{P}} & {TP} & {FP} \\",
+    #     fr"                                     & \textbf{{N}} & {FN} & {TN} \\",
+    #     r"\hline",
+    #     fr"\multicolumn{{2}}{{c|}}{{Accuracy}}  & \multicolumn{{2}}{{c}}{{{accuracy:.2f}}} \\",
+    #     fr"\multicolumn{{2}}{{c|}}{{Precision}} & \multicolumn{{2}}{{c}}{{{precision:.2f}}} \\",
+    #     fr"\multicolumn{{2}}{{c|}}{{Recall}}    & \multicolumn{{2}}{{c}}{{{recall:.2f}}} \\",
+    #     fr"\multicolumn{{2}}{{c|}}{{F1 Score}}  & \multicolumn{{2}}{{c}}{{{F1:.2f}}} \\",
+    #     r"\end{tabular}",
+    #     r"\caption{Confusion matrix with accuracy, precision, recall, and F1 score.}",
+    #     r"\label{tab:confusion_metrics}",
+    #     r"\end{table}"
+    # ]
+    # 
+    # with open(filename, "w") as f:
+    #     f.write("\n".join(lines))
 
 def main():
     from helperscripts.optimize import quasi_newton
