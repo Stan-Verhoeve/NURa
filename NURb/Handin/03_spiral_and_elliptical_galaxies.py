@@ -79,6 +79,7 @@ def export_to_latex(filename, y_true, y_pred):
         r"\textbf{Prediction} & \textbf{P} & " + f"{TP} & {FP} \\\\",
         r"                   & \textbf{N} & " + f"{FN} & {TN} \\\\",
         r"\hline",
+        r"\hline",
         fr"\multicolumn{{2}}{{c|}}{{Accuracy}}  & \multicolumn{{2}}{{c}}{{{accuracy:.3f}}} \\",
         fr"\multicolumn{{2}}{{c|}}{{Precision}} & \multicolumn{{2}}{{c}}{{{precision:.3f}}} \\",
         fr"\multicolumn{{2}}{{c|}}{{Recall}}    & \multicolumn{{2}}{{c}}{{{recall:.3f}}} \\",
