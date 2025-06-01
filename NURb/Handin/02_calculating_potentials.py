@@ -117,7 +117,7 @@ def main():
             if col == 0:
                 ax[row, col].set(ylabel="z [Mpc]")
 
-            ax[row, col].set_title(f"Mass distribution x $\in$ [{xmin:.2f}, {xmax:.2f}] Mpc")
+            ax[row, col].set_title(fr"Mass distribution x $\in$ [{xmin:.2f}, {xmax:.2f}] Mpc")
         
         plt.tight_layout()
         plt.savefig(f"figures/Q2a_level{level}.png",dpi=300)
@@ -135,8 +135,7 @@ def main():
 
     # k-vector in each direction is identical
     # Wave vector is given by k = 2pi/lambda
-    # TODO: Currently uses fftfreq --> change to own!!
-    k_1d = 2 * np.pi * np.fft.fftfreq(2**level, 2**level / L)
+    k_1d = 2 * np.pi * fftfreq(2**level, 2**level / L)
     kx, ky, kz = np.meshgrid(k_1d, k_1d, k_1d) #, indexing="ij")
     k2 = kx**2 + ky**2 + kz**2
     
