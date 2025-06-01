@@ -23,6 +23,22 @@ MASSES = {
 }
 MASSES = np.array([1.0, 1.651e-7, 2.447e-6, 3.003e-6, 3.213e-7, 9.545e-4, 2.857e-4, 4.365e-5, 5.150e-5])
 
+def unique_pairs(N):
+    # Number of indices to calculate
+    Nidx = N * (N - 1) // 2
+    i_idx = np.empty(Nidx, dtype=np.int32)
+    j_idx = np.empty(Nidx, dtype=np.int32)
+
+    # Compute all indices i < j
+    k = 0
+    for i in range(N):
+        for j in range(i + 1, N):
+            i_idx[k] = i
+            j_idx[k] = j
+            k += 1
+
+    return i_idx, j_idx
+
 def get_solar_initial(t):
     system = np.zeros((len(NAMES), 2, 3))
 
@@ -40,20 +56,22 @@ def get_solar_initial(t):
 def grav_acc(positions, masses):
     N = positions.shape[0]
     acc = np.zeros_like(positions)
-    
-    for i in range(N):
-        for j in range(i+1, N):
-            dr = positions[i] - positions[j]
-            dist2 = np.dot(dr, dr)
-            dist3 = dist2 ** (1.5)  # <-- TODO: Better way to do this??
 
-            # Sanity check to avoid self-interaction
-            if dist3 == 0:
-                continue
+    i, j = unique_pairs(N)
 
-            F = -GRAV_CONST * dr / dist3
-            acc[i] += masses[j] * F
-            acc[j] -= masses[i] * F
+    dr = positions[i] - positions[j]
+    dist2 = np.sum(dr**2, axis=1)
+    dist3 = dist2 * np.sqrt(dist2)
+
+    F = -GRAV_CONST * dr / dist3[:, np.newaxis]
+    Fi = masses[j, np.newaxis] * F
+    Fj = masses[i, np.newaxis] * F
+
+
+    # Accumulate
+    for n in range(len(i)):
+        acc[i[n]] += Fi[n]
+        acc[j[n]] -= Fj[n]
 
     return acc
 
@@ -282,17 +300,18 @@ def main():
     plt.savefig("figures/Q1c_comparison", bbox_inches="tight", dpi=600)
     plt.close()
     
+    # TODO: removed because vdesk is slow
     # Energy plot
-    fig, ax = plt.subplots(1, 1)
-    ax.plot(time, lf_energy, label="Leapfrog", alpha=0.3)
-    ax.plot(time, rk_energy, label="RK", alpha=0.3)
-    ax.set(title="Total energy in sytem",
-           xlabel="Time [yr]",
-           ylabel="Energy [J]",
-           )
-    ax.legend()
-    fig.savefig("figures/Q1c_energy", bbox_inches="tight", dpi=600)
-    plt.close()
+    # fig, ax = plt.subplots(1, 1)
+    # ax.plot(time, lf_energy, label="Leapfrog", alpha=0.3)
+    # ax.plot(time, rk_energy, label="RK", alpha=0.3)
+    # ax.set(title="Total energy in sytem",
+    #        xlabel="Time [yr]",
+    #        ylabel="Energy [J]",
+    #        )
+    # ax.legend()
+    # fig.savefig("figures/Q1c_energy", bbox_inches="tight", dpi=600)
+    # plt.close()
     
     ###########
     ## Bonus ##
