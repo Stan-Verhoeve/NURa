@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from helperscripts.optimize import quasi_newton
 
 def parse_data(file):
     data = np.loadtxt(file)
@@ -115,8 +116,29 @@ def export_to_latex(filename, y_true, y_pred):
     # with open(filename, "w") as f:
     #     f.write("\n".join(lines))
 
+
+def get_model_cost_and_prediction(M_scaled, labels, theta_init):
+    # Wrap gradients
+    f = lambda theta: cost(theta, M_scaled, labels)
+    grad_f = lambda theta: cost_grad(theta, M_scaled, labels)
+    
+    # Find optimal theta
+    theta_opt, theta_history = quasi_newton(f, grad_f, theta_init, max_iters=1000, atol=1e-10)
+    
+    print(theta_opt)
+    # Store cost here
+    cost_history = np.zeros(theta_history.shape[0] + 1)
+    cost_history[0] = cost(theta_init, M_scaled, labels)
+    for j in range(cost_history.size - 1):
+        # Set theta for combination to their best-fit
+        cost_history[j + 1] = cost(theta_history[j], M_scaled, labels)
+    
+    # Get model predictions
+    predicted = prediction(theta_opt, M_scaled)
+    
+    return theta_opt, cost_history, predicted
+
 def main():
-    from helperscripts.optimize import quasi_newton
     import itertools
 
     data, M, labels = parse_data("galaxy_data.txt")
@@ -136,34 +158,11 @@ def main():
     # Find optimal theta
     theta_opt, theta_history = quasi_newton(f, grad_f, theta_init, max_iters=1000, atol=1e-8)
     
-    
     ################
     ## Problem 3b ##
     ################
-    # fig, ax = plt.subplots(3,2,figsize=(10,15))
-    fig, ax = plt.subplots(1, 1)
-    names = [r'$\kappa_{CO}$', 'Color', 'Extended', 'Emission line flux']
-    plot_idx = [[0,0], [0,1], [1,0], [1,1], [2,0], [2,1]]
-    for i, comb in enumerate(itertools.combinations(np.arange(0,4), 2)):
-        comb = np.array(comb)
-        cost_history = np.zeros(theta_history.shape[0] + 1)
-        cost_history[0] = cost(theta_init, M_scaled, labels)
-        for j in range(cost_history.size - 1):
-            curr_theta = np.ones(4)
-            # Set theta for combination to their best-fit
-            curr_theta[comb] = theta_history[j, comb]
-            cost_history[j + 1] = cost(curr_theta, M_scaled, labels)
-        
-
-        ax.plot(cost_history, label=f"{names[comb[0]]} + {names[comb[1]]}")
-        ax.set(xlabel="Iteration", 
-               ylabel=r"J($\theta$)",
-               title="Cost function convergence",
-               )
-        ax.legend()
-    plt.savefig("figures/Q3b", bbox_inches="tight", dpi=600)
-    plt.close()
     
+    # Cost history when fitting to all 4 features
     cost_history = np.zeros(theta_history.shape[0] + 1)
     cost_history[0] = cost(theta_init, M_scaled, labels)
     for i in range(cost_history.size - 1):
@@ -193,6 +192,75 @@ def main():
     print("Recall:", recall)
     print("F1:", F1)
     
+    ######################
+    ## Problem 3b and c ##
+    ######################
+
+    # Cost history when fitting to 2 features at a time
+    cost_fig, cost_ax = plt.subplots(1, 1)
+    db_fig, db_ax = plt.subplots(3,2,figsize=(10,15))
+    
+    names = [r'$\kappa_{CO}$', 'Color', 'Extended', 'Emission line flux']
+    plot_idx = [[0,0], [0,1], [1,0], [1,1], [2,0], [2,1]]
+    
+    # Iterate over combinations
+    for i, comb in enumerate(itertools.combinations(np.arange(0,4), 2)):
+        # Cast to array
+        comb = np.array(comb)
+        
+        print(f"{names[comb[0]]} , {names[comb[1]]}")
+        # Get cost history and predicted values
+        theta_opt, cost_history, predicted = get_model_cost_and_prediction(M_scaled[:,comb], labels, [1,1])
+
+        ####################
+        ## All about cost ##
+        ####################
+        # Plot cost convergence
+        cost_ax.plot(cost_history, label=f"{names[comb[0]]} + {names[comb[1]]}")
+        cost_ax.set(xlabel="Iteration", 
+                    ylabel=r"J($\theta$)",
+                    title="Cost function convergence",
+                   )
+        cost_ax.legend(loc=(1.05,0))
+
+        #########################
+        ## All about decisions ##
+        #########################
+        export_to_latex(f"OUT/confusion_matrix_{comb[0]}{comb[1]}.tex", labels, predicted)
+        
+        # Decision boundary is where sigmoid(z) == 0.5 --> z == 0
+        # This boils down to theta @ X == 0; for our four features,
+        # theta1 x1 + theta2 x2 == 0
+        # The boundary is those x for which this is true; this boundary
+        # is a hypersurface (4D, in this case). To plot 2D boundary, we 
+        # fix the two features we're not plotting to zero, s.t. we have
+        # the line theta1 x1 + theta2 x2 == 0 --> x2 = -theta1 / theta2 x1
+        # where x1 is the feature plotted on the horizontal axis
+        # Feature plotted on horizontal axis
+        curr_horizontal_feat = M_scaled[:,comb[0]]
+        # boundary_x = np.linspace(curr_horizontal_feat.min(), curr_horizontal_feat.max(), 1000)
+        low = -3 * curr_horizontal_feat.std()
+        high = 3 * curr_horizontal_feat.std()
+        up = 1 * M_scaled[:,comb[1]].std()
+        down = -1 * M_scaled[:,comb[1]].std()
+        # low = curr_horizontal_feat.min()
+        # high = curr_horizontal_feat.max()
+        boundary_x = np.linspace(low, high, 1000)
+        decision_boundary = -(theta_opt[0] * boundary_x) / theta_opt[1]
+
+        db_ax[plot_idx[i][0],plot_idx[i][1]].scatter(M_scaled[:,comb[0]], M_scaled[:,comb[1]], c=labels)
+        db_ax[plot_idx[i][0],plot_idx[i][1]].set(xlabel=names[comb[0]], 
+                                                 ylabel=names[comb[1]], 
+                                                 xlim=(low, high),
+                                                 ylim=(down, up),
+                                                 )
+        db_ax[plot_idx[i][0],plot_idx[i][1]].plot(boundary_x, decision_boundary, 'k--')
+    cost_fig.savefig("figures/Q3b", bbox_inches="tight", dpi=600)
+    db_fig.savefig("figures/Q3c", bbox_inches="tight", dpi=600)
+    plt.close("all")
+    
+    
+    """
     ################
     ## Problem 3c ##
     ################
@@ -223,5 +291,6 @@ def main():
         ax[plot_idx[i][0],plot_idx[i][1]].plot(boundary_x, decision_boundary, 'k--')
     plt.savefig("figures/Q3c", bbox_inches="tight", dpi=600)
     plt.close()
+    """
 if __name__ in ("__main__"):
     main()
