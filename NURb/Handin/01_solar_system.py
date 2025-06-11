@@ -10,17 +10,8 @@ from helperscripts.integrate import rk4_single
 # Constants
 NAMES = np.array(["Sun", "Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"])
 GRAV_CONST = G.to("AU3 / (solMass day2)").value
-MASSES = {
-    "Sun":     1.0,
-    "Mercury": 1.651e-7,
-    "Venus":   2.447e-6,
-    "Earth":   3.003e-6,
-    "Mars":    3.213e-7,
-    "Jupiter": 9.545e-4,
-    "Saturn":  2.857e-4,
-    "Uranus":  4.365e-5,
-    "Neptune": 5.150e-5
-}
+
+# Masses is Solar mass
 MASSES = np.array([1.0, 1.651e-7, 2.447e-6, 3.003e-6, 3.213e-7, 9.545e-4, 2.857e-4, 4.365e-5, 5.150e-5])
 
 def unique_pairs(N):
@@ -253,15 +244,21 @@ def main():
     # rk_energy[0] = get_orbital_energy(rk_states[0], MASSES)
     # lf_energy[0] = get_orbital_energy(rk_states[0], MASSES)
     
+    # First kick with half timestep
+    acc = grav_acc(lf_positions[0], MASSES)
+    lf_velocities[0] += 0.5 * dt * acc
+
     for i in range(Nsteps-1):
         ##############
         ## Leapfrog ##
         ##############
-        acc = grav_acc(lf_positions[i], MASSES)
-        vel_half = lf_velocities[i] + 0.5 * dt * acc
-        lf_positions[i+1] = lf_positions[i] + dt * vel_half
+
+        # Update positions
+        lf_positions[i+1] = lf_positions[i] + dt * lf_velocities[i]
+        
+        # Update velocities (with new accelerations)
         acc_new = grav_acc(lf_positions[i+1], MASSES)
-        lf_velocities[i+1] = vel_half + 0.5 * dt * acc_new
+        lf_velocities[i+1] = lf_velocities[i] + dt * acc_new
 
         # TODO: because vdesk is slow
         # lf_state = flatten_state(lf_positions[i+1], lf_velocities[i+1])
