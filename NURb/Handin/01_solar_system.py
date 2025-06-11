@@ -88,20 +88,13 @@ def unflatten_state(state):
     velocities = state[3*N:].reshape(N, 3)
     return positions, velocities
 
-def derivatives(t, state):
-    positions, velocities = unflatten_state(state)
-    acc = grav_acc(positions, MASSES)
-    dpos_dt = velocities
-    dvel_dt = acc
-    return flatten_state(dpos_dt, dvel_dt)
-
 def system(t, state):
     N = len(state) // 6
     pos, vel = unflatten_state(state)
     acc = grav_acc(pos, MASSES)
     dpos_dt = vel
     dvel_dt = acc
-    return np.vstack([dpos_dt, dvel_dt]).flatten()
+    return flatten_state(dpos_dt, dvel_dt)
 
 def get_orbital_energy(state, masses):
     pos, vel = unflatten_state(state)
