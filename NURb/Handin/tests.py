@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from helperscripts.prettyprint import pretty_print_title
 
 def test_kdtree():
     from helperscripts.spatial import KDTree, plot_2Dtree
@@ -113,12 +114,16 @@ def test_quasi():
     # Initial guess
     p0 = np.array([0.0, 0.0])
 
-    opt_p = quasi_newton(f, grad_f, p0)
+    opt_p, __ = quasi_newton(f, grad_f, p0)
     print("Optimal parameters:", opt_p)
+    print("True parameters   : [2, -3]")
 
 if __name__ in ("__main__"):
-    # test_kdtree()
-    # test_octree()
-    # test_fft()
-    # test_fftn()
+    pretty_print_title("Now testing octree")
+    test_octree()
+    pretty_print_title("Now testing fft")
+    test_fft()
+    pretty_print_title("Now testing Nfft")
+    test_fftn()
+    pretty_print_title("Now testing BFGS")
     test_quasi()
