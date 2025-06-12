@@ -7,7 +7,7 @@
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.9\linewidth]{figures/Q3a_scaled.png}
+        \includegraphics[width=0.9\linewidth]{../figures/Q3a_scaled.png}
         \caption{Distributions of the four features under consideration. Note that features $\kappa_\mathrm{CO}$ and 'Color' show nice uniform and normal distributions, respectively, whereas features 'Extended' and 'Emission line flux' have most of their values living in a single bin, with a few high outliers. }
         \label{fig:Q3a_scaled}
     \end{figure}
@@ -28,7 +28,7 @@
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.9\linewidth]{figures/Q3b.png}
+        \includegraphics[width=0.9\linewidth]{../figures/Q3b.png}
         \caption{Cost history for every iteration in our minimization routine. We find that the feature $\kappa_\mathrm{CO}$ in combination with any of the other three features performs best, with the combination $\kappa_\mathrm{CO}$ + 'Extended' being the best of the three. $\kappa_\mathrm{CO}$ combined with the other two features has a (near) identical cost history, indicating that the feature $\kappa_\mathrm{CO}$ bears the most weight. This is also reflected in the other combinations, which perform considerably worse. Especially 'Extended' + 'Emission line flux' has a bad convergence, indicating that the features are not very predictive compared to other combinations. This was also evident in their distributions living mostly in a single bin.}
         \label{fig:Q3b}
     \end{figure}
@@ -65,7 +65,7 @@
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.9\linewidth]{figures/Q3c.png}
+        \includegraphics[width=0.9\linewidth]{../figures/Q3c.png}
         \caption{Scatter plot with decision boundary for the various feature combinations. We find clear and decisive boundaries for all feature combinations with $\kappa_\mathrm{CO}$, and boundaries that decrease in accuracy for other combinations. These findings are also reflected in the cost convergence, where feature combinations that converge to higher costs show a less decisive boundary, admitting for more false classifications.}
         \label{fig:Q3c}
     \end{figure}
