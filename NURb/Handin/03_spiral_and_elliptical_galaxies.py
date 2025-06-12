@@ -241,8 +241,8 @@ def main():
         # boundary_x = np.linspace(curr_horizontal_feat.min(), curr_horizontal_feat.max(), 1000)
         low = -3 * curr_horizontal_feat.std()
         high = 3 * curr_horizontal_feat.std()
-        up = 1 * M_scaled[:,comb[1]].std()
-        down = -1 * M_scaled[:,comb[1]].std()
+        up = 3 * M_scaled[:,comb[1]].std()
+        down = -3 * M_scaled[:,comb[1]].std()
         # low = curr_horizontal_feat.min()
         # high = curr_horizontal_feat.max()
         boundary_x = np.linspace(low, high, 1000)
@@ -258,39 +258,6 @@ def main():
     cost_fig.savefig("figures/Q3b", bbox_inches="tight", dpi=600)
     db_fig.savefig("figures/Q3c", bbox_inches="tight", dpi=600)
     plt.close("all")
-    
-    
-    """
-    ################
-    ## Problem 3c ##
-    ################
 
-    # TODO: Determine decision boundary
-    # In principle, this is at sigmoid(z) == 0.5 --> z == 0
-    # and z == theta @ X, so theta @ X == 0 is the decision boundary
-    # However, this is boundary is N-space. How to reduce to 2D?
-    # Fix other params at what value? Project into 2D?
-    fig, ax = plt.subplots(3,2,figsize=(10,15))
-    names = [r'$\kappa_{CO}$', 'Color', 'Extended', 'Emission line flux']
-    plot_idx = [[0,0], [0,1], [1,0], [1,1], [2,0], [2,1]]
-    for i, comb in enumerate(itertools.combinations(np.arange(0,4), 2)):
-        # Decision boundary is where sigmoid(z) == 0.5 --> z == 0
-        # This boils down to theta @ X == 0; for our four features,
-        # theta1 x1 + theta2 x2 + theta3 x3 + theta4 x4 == 0
-        # The boundary is those x for which this is true; this boundary
-        # is a hypersurface (4D, in this case). To plot 2D boundary, we 
-        # fix the two features we're not plotting to zero, s.t. we have
-        # the line theta1 x1 + theta2 x2 == 0 --> x2 = -theta1 / theta2 x1
-        # where x1 is the feature plotted on the horizontal axis
-        curr_horizontal_feat = M_scaled[:,comb[0]]
-        boundary_x = np.linspace(curr_horizontal_feat.min(), curr_horizontal_feat.max(), 1000)
-        decision_boundary = -(theta_opt[comb[0]] * boundary_x) / theta_opt[comb[1]]
-
-        ax[plot_idx[i][0],plot_idx[i][1]].scatter(M_scaled[:,comb[0]], M_scaled[:,comb[1]], c=labels)
-        ax[plot_idx[i][0],plot_idx[i][1]].set(xlabel=names[comb[0]], ylabel=names[comb[1]])
-        ax[plot_idx[i][0],plot_idx[i][1]].plot(boundary_x, decision_boundary, 'k--')
-    plt.savefig("figures/Q3c", bbox_inches="tight", dpi=600)
-    plt.close()
-    """
 if __name__ in ("__main__"):
     main()
