@@ -1,0 +1,78 @@
+\section{Spiral and elliptical galaxies}
+\begin{enumerate}[label=(\alph*)]
+    \item We import and scale the data using the two functions outlined below, where we use standardization to have features with mean 0 and standard deviation 1. We show the first 1 lines in listing \ref{lst:first_10_lines}
+    \lstinputlisting[style=pystyle, language=Python, firstline=5, lastline=20]{../03_spiral_and_elliptical_galaxies.py}
+    \lstinputlisting[style=pystyle, label={lst:first_10_lines}, caption={First 10 lines of the scaled features}, lastline=10]{../OUT/galaxy_data_scaled.txt}
+    We also plot the distributions of the features in figure \ref{fig:Q3a_scaled}, where we find nice distributions for the first 2 features, but cannot say much about the last two; most of the data lives in a single bin, with a few outliers.  
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\linewidth]{../figures/Q3a_scaled.png}
+        \caption{Distributions of the four features under consideration. Note that features $\kappa_\mathrm{CO}$ and 'Color' show nice uniform and normal distributions, respectively, whereas features 'Extended' and 'Emission line flux' have most of their values living in a single bin, with a few high outliers. }
+        \label{fig:Q3a_scaled}
+    \end{figure}
+
+    \item For our minimization routine, we choose the BFGS quasi-newton method that we implemented in the course NURa. We adapt the code according to the feedback, and rewrite it such that it no longer needs a likelihood and its gradient, but instead works for general functions and their gradient. The core logic and implementation is identical; the only difference is in the way a function and gradient is passed. We additionally pass, besides the minimum, the "history" of the parameters. The code can be found below:
+    \lstinputlisting[style=pystyle, language=Python]{../helperscripts/optimize.py}
+    The function we optimize for in logistic regression is the cost function, defined as
+    \begin{equation}
+        J(\theta) = -\frac{1}{m} \sum_{i=1}^{m} \left[ y^{(i)} \log(h_\theta(x^{(i)})) + (1 - y^{(i)}) \log(1 - h_\theta(x^{(i)})) \right],
+    \end{equation}
+    with gradient
+    \begin{equation}
+        \nabla J(\theta) = \frac{1}{m} X^T (h_\theta(X) - y),
+    \end{equation}
+    where for the hypothesis, we take the sigmoid function $\sigma(z)$ with $z\equiv X\theta$. The above functions are implemented as
+    \lstinputlisting[style=pystyle, language=Python, firstline=36, lastline=52]{../03_spiral_and_elliptical_galaxies.py}
+    We then minimize the cost function for all pairwise features, and show the history of the cost function in figure \ref{fig:Q3b}.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\linewidth]{../figures/Q3b.png}
+        \caption{Cost history for every iteration in our minimization routine. We find that the feature $\kappa_\mathrm{CO}$ in combination with any of the other three features performs best, with the combination $\kappa_\mathrm{CO}$ + 'Extended' being the best of the three. $\kappa_\mathrm{CO}$ combined with the other two features has a (near) identical cost history, indicating that the feature $\kappa_\mathrm{CO}$ bears the most weight. This is also reflected in the other combinations, which perform considerably worse. Especially 'Extended' + 'Emission line flux' has a bad convergence, indicating that the features are not very predictive compared to other combinations. This was also evident in their distributions living mostly in a single bin.}
+        \label{fig:Q3b}
+    \end{figure}
+    Our optimal parameters for each combination are as follows
+    \lstinputlisting[style=txtstyle, firstline=5]{../OUT/03_spiral_and_elliptical_galaxies.txt}
+    where we find what is already reflected in the cost convergence: the featuer $\kappa_\mathrm{CO}$ is the most important feature in the classification, bearing significantly higher weight than the other features. Also reflected in the optimal parameters is the relative importance of colour as the second-best estimator, and the poor classification power of the other two features; any combination with these features is overwhelmingly dominated by the contribution of the other features (i.e. $\kappa_\mathrm{CO}$ or 'Color'), and the combination 'Extended' + 'Emission line flux' results in a low weight for both.\\
+    \\
+    To create the above figure, we used the following code:
+    \lstinputlisting[style=pystyle, language=Python, firstline=195, lastline=224]{../03_spiral_and_elliptical_galaxies.py}
+
+    \item For the predictions, we calculate the sigmoid function $\sigma(z)$ for $\theta=\theta_\mathrm{opt}$, and classify as spiral those for which $\sigma(z) \geq 0.5$, and as elliptical for those where $\sigma(z) < 0.5$. We then calculate the number of true (T) / false (F) positives (P) / negatives (N), and construct the confusion matrix, as well as calculate the accuracy $A$, precision $P$, recall $R$, and $F_1$ as follows:
+   \begin{align*}
+        A &= \frac{\mathrm{TP} + \mathrm{TN}}{\mathrm{TP} + \mathrm{TN} + \mathrm{FP} + \mathrm{FN}}, \\
+        P &= \frac{\mathrm{TP}}{\mathrm{TP} + \mathrm{FP}}, \\
+        R &= \frac{\mathrm{TP}}{\mathrm{TP} + \mathrm{FN}}, \\
+        F_1 &= 2\frac{PR}{P + R}.
+    \end{align*}
+    We report our findings in table 1, where we find accuracy, precicion, recall, and $F_1$ score $>94$\%.
+
+    \input{../OUT/confusion_matrix}
+
+    To produce the above, we used the code below:
+    \lstinputlisting[style=pystyle, language=Python, firstline=54, lastline=95]{../03_spiral_and_elliptical_galaxies.py}
+
+    To calculate the decision boundaries between any pair of features $(x_1, x_2)$, we realize that the classification boundary is at $\sigma(z) = 0.5\longrightarrow z=0$. As such, we can write
+    \begin{align}
+        \theta_1 x_1 + \theta_2x_2 = 0,\\
+        x_2 = - \frac{\theta_1}{\theta_2}x_1,
+    \end{align}
+    where $x_2$ is the feature plotted on the vertial axis, and $x_1$ the feature on the horizontal axes. Doing so for the different combinations, and limiting the axes to 3 standard deviations, we find figure \ref{fig:Q3c}. We find a remarkably clear decision boundary in the combination $\kappa_\mathrm{CO}$ + 'color', and good boundaries for the other combinations with $\kappa_\mathrm{CO}$. This reflect what we had found previously, where the cost function for feature combinations with $\kappa_\mathrm{CO}$ converges to a lower minimum. Indeed, for the other feature combinations, the decision boundary admits for more false classifications.\\
+    \\
+    We use the following code to generate the plot:
+    \lstinputlisting[style=pystyle, language=Python, firstline=239, lastline=260]{../03_spiral_and_elliptical_galaxies.py}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\linewidth]{../figures/Q3c.png}
+        \caption{Scatter plot with decision boundary for the various feature combinations. We find clear and decisive boundaries for all feature combinations with $\kappa_\mathrm{CO}$, and boundaries that decrease in accuracy for other combinations. These findings are also reflected in the cost convergence, where feature combinations that converge to higher costs show a less decisive boundary, admitting for more false classifications.}
+        \label{fig:Q3c}
+    \end{figure}
+\end{enumerate}
+
+\subsection{Full code}
+The full code is given by
+\lstinputlisting[style=pystyle, language=Python]{../03_spiral_and_elliptical_galaxies.py}
+with output
+\lstinputlisting[style=txtstyle]{../OUT/03_spiral_and_elliptical_galaxies.txt}

@@ -1,0 +1,56 @@
+\section{Calculating potentials in different ways}
+\begin{enumerate}[label=(\alph*)]
+    \item We build our octree assuming a unit box (i.e. $(0,1)^3$). As such, we scale the particle positions to this range by dividing out the box size $L$. For the construction of the octree, we use the following code:
+    \lstinputlisting[style=pystyle, language=Python, firstline=167, lastline=309]{../helperscripts/spatial.py}
+    To fill the mass map, we look up which nodes are at a depth $d$ using
+    \lstinputlisting[style=pystyle, language=Python, firstline=7, lastline=25]{../02_calculating_potentials.py}
+    We then iterate over all nodes returned by this function, and add to the mass map the number of particles in that node, multiplied by the particle mass (all particles have identical mass). We do this only for the first 4 slices in the $x$-coordinate, and repeat for different levels:
+    \lstinputlisting[style=pystyle, language=Python, firstline=64, lastline=126]{../02_calculating_potentials.py}
+    Plotting the different mass maps results in figures \ref{fig:Q2a_level3}, \ref{fig:Q2a_level5}, and \ref{fig:Q2a_level7}. 
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\linewidth]{../figures/Q2a_level3.png}
+        \caption{Mass maps at node depth 3 for the first 4 slices of the $x$-coordinate. Note that the mass is in units of $M_\odot$. We find that the mass is distributed relatively uniformly; no significant structure can be found.}
+        \label{fig:Q2a_level3}
+    \end{figure}
+    
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\linewidth]{../figures/Q2a_level5.png}
+        \caption{Mass maps at node depth 5 for the first 4 slices of the $x$-coordinate. Note that the mass is in units of $M_\odot$. The mass distribution is no longer relatively uniform; there are regions with significantly more mass surrounded by regions of relatively low mass. The different slices show apparent structure.}
+        \label{fig:Q2a_level5}
+    \end{figure}
+    
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\linewidth]{../figures/Q2a_level7.png}
+        \caption{Mass maps at node depth 7 for the first 4 slices of the $x$-coordinate. Note that the mass is in units of $M_\odot$. We find that the mass maps show rich structure, with a web of high mass surrounded by regions of low(er) mass. }
+        \label{fig:Q2a_level7}
+    \end{figure}
+    The full code for building the octree and plotting the mass maps can be found below:
+    \lstinputlisting[style=pystyle, language=Python, lastline=126]{../02_calculating_potentials.py}
+
+    \item For the N-dimensional Fourier transform, we first implement a one-dimensional Fourier transform (and its inverse) using the recursive algorithm:
+    \lstinputlisting[style=pystyle, language=Python, lastline=47]{../helperscripts/fft.py}
+    We then extend to the N-dimensional Fourier transform by applying this one-dimensional Fourier transform to each axis in the N-dimensional data. Of note here is that the different Fourier transforms are independent, and the data can therefore be reshaped into a 2D array, with the 1D Fourier transform applied to all the columns of this 2D array:
+    \lstinputlisting[style=pystyle, language=Python, firstline=49, lastline=110]{../helperscripts/fft.py}
+    Lastly, we define the Fourier frequencies using the code below, where $d$ is the sample spacing (inverse of the sample rate).
+    \lstinputlisting[style=pystyle, language=Python, firstline=112]{../helperscripts/fft.py}
+    We convert our mass map at node level 7 to a density map by dividing by the node volume $V_\mathrm{node} = \left(\frac{L}{128}\right)^3$, and take the Fourier transform of this density map. We then calculate the one-dimensional wave vectors $k_{1\mathrm{D}} = \frac{2\pi}{\lambda}$, where we use a sampling spacing $d = \frac{128}{L}$. To get the magnitude of the full wave vector, we use \verb|np.meshgrid()| to construct a 3D grid from the 1D wave vectors, and calculate the magnitude as $|k|^2 = k_x^2 + k_y^2 + k_z^2$. We set the amplitude $|k|^2=0$ to be infinity, such that its corresponding Fourier component becomes zero. We do this because the density corresponding to $\vec{k}=\vec{0}$ is the mean density, which should not contribute to the potential. We then calculate the potential by taking the inverse Fourier transform of our density map divided by the wave vector magnitudes:
+    \lstinputlisting[style=pystyle, language=Python, firstline=127, lastline=184]{../02_calculating_potentials.py}
+    We plot the result for slice indices 0, 16, 32, 64 in figure \ref{fig:Q2b_potential}. 
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\linewidth]{../figures/Q2b_potential.png}
+        \caption{Potential of different slices, calculated from the Poisson equation for gravity using a fast Fourier transform technique.}
+        \label{fig:Q2b_potential}
+    \end{figure}
+\end{enumerate}
+
+\subsection{Full code}
+The full code is given by
+\lstinputlisting[style=pystyle, language=Python]{../02_calculating_potentials.py}
+with output
+\lstinputlisting[style=txtstyle]{../OUT/02_calculating_potentials.txt}

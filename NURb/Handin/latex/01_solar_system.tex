@@ -1,0 +1,94 @@
+\section{Simulating the solar system}
+Throughout this question, \verb|CAPITALIZED| names refer to global constants defined at the start of the script as (where \verb|G| refers to \verb|astropy.constants.G|):
+\lstinputlisting[style=pystyle, language=Python, firstline=10, lastline=16]{../01_solar_system.py}
+
+\begin{enumerate}[label=(\alph*)]
+    \item To prepare our simulation of the solar system, we use \verb|astropy.coordinates| to extract the three-dimensional position and velocity for each of the planets at initial time 2021-12-07, 10:00. We convert the positions to AU, and the velocities to AU day$^{-1}$, where we make use of the following wrapper function:
+    \lstinputlisting[style=pystyle, language=Python, firstline=33, lastline=46]{../01_solar_system.py}
+    Note that we use the \verb|astropy| built-in ephemeris, since the "jpl" ephemeris is not available on the strw vdesk by default.\\
+    \\
+    We then plot the initial position in the XY- and XZ plane in figure \ref{fig:Q1_initial}, for which the following code is used:
+    \lstinputlisting[style=pystyle, language=Python, firstline=195, lastline=209]{../01_solar_system.py}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\linewidth]{../figures/Q1a.png}
+        \caption{Initial configuration of the solar system at time 2021-12-07, 10:00, qeuried from the builtin astropy ephemeris.}
+        \label{fig:Q1_initial}
+    \end{figure}
+
+    \item To calculate the gravitational acceleration experienced by each celestial body, we make use of the suggested tensor structure outlined in the exercise. To avoid an explicit double for-loop for each force calculation (and thus slow code), we optimize by calculating all unique pairs of indices $(i,j)$ for which $i < j$, and take the pairwise distance tensor \verb|dr = r[i] - r[j]| for all bodies in one go. We calculate the squared and cubed distance by taking the sum along the first axis (\verb|np.sum(dr**2, axis=1)|; \verb|dist3 = dist2 * np.sqrt(dist2)|), and calculate the gravitational force by broadcasting this array to the shape of the tensor \verb|dr| (essentially letting \verb|numpy| apply the cubed distance to each column in \verb|dr| in a loop for us under the hood). We apply the same logic to the multiplication of the masses (multiplying by $M_j$ for body $i$, and $M_i$ for body $j$). All that then remains is the summation (accumulation) of all forces. This requires special attention, as a simple sum along one of the broadcasted axes will double-count contributions for all bodies between $i$ and $j$. As such, we require one manual for-loop iterating over the indices, and accumulating only those forces at those indices. During accumulation, we apply Newton's second law of motion, where the acceleration of body $j$ is decreased by the same amount as the acceleration of body $j$ is increased (i.e. $F_i = -F_j$). The full code for gravitational acceleration can be found below:
+    \lstinputlisting[style=pystyle, language=Python, firstline=17, lastline=32]{../01_solar_system.py}
+    \lstinputlisting[style=pystyle, language=Python, firstline=47, lastline=68]{../01_solar_system.py}
+    The leapfrog integration scheme is then straightforwardly implemented by first kicking the velocities by half the timestep (outside the integration loop), and then updating the positions, acceleration, and velocity as one would normally. The full leapfrog integration loop can be found below:
+    \lstinputlisting[style=pystyle, language=Python, firstline=211, lastline=254]{../01_solar_system.py}
+    To plot the orbits, we make use of the following function:
+    \lstinputlisting[style=pystyle, language=Python, firstline=69, lastline=80]{../01_solar_system.py}
+    which gives figure \ref{fig:Q1b_orbits_all}. We find nearly circular orbtis in the XY plane for the outermost planets, and find that the Z-position moves sinusoidal in time. This indicates that the system is inclined with respect to the XY-plane. Because the outermost planets dominate the space in the plot, we additionally plot the orbits of only the 4 innermost planets in figure \ref{fig:Q1b_orbits_zoom}.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\linewidth]{../figures/Q1b.png}
+        \caption{Orbital position of all celestial bodies, traced over 200 yr. \textbf{left:} XY-coordinates of the orbit. Note that this is \textit{not} a projection into the XY-plane. \textbf{Right:} Z-position over time. We find strong sinusoidal movement, indicating that the system is inclined with respect to the XY-plane. The period of the sine is a direct measure of the orbital period of the celestial body.}
+        \label{fig:Q1b_orbits_all}
+    \end{figure}
+    For the zoomed-in plot, we find peculiar deviations in the orbit of Mercury; its orbit is not "conserved" over time, instead drifting about. One might expect Newtonian precession due to the influence of Venus and Jupiter, but this precession is about 0.3 degrees per 200 years, much more nuanced than the precession visible in figure \ref{fig:Q1b_orbits_zoom}. Instead, we attribute the orbital precession to numerical phase shift; the leapfrog integration scheme is only 2nd order accurate, and with a resolution of 0.5 days, there are only about 172 points characterizing one full period. Considering the high velocities in the perihelion, the argument of periapsis may not be resolved, and an apparent precession of the orbit can be observed. Indeed, increasing the resolution (reducing the timestep) resolves the argument of periapsis, and no precession is observed.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\linewidth]{../figures/Q1b_zoomed.png}
+        \caption{Orbital position of the 4 innermost planets, traced over 200 yr. \textbf{left:} XY-coordinates of the orbit. Note that this is \textit{not} a projection into the XY-plane. \textbf{Right:} Z-position over time. We find strong sinusoidal movement, indicating that the system is inclined with respect to the XY-plane. The period of the sine is a direct measure of the orbital period of the celestial body.}
+        \label{fig:Q1b_orbits_zoom}
+    \end{figure}
+
+    \item As our second algorithm, we choose the RK4 integration scheme. We implement a single RK4 step following a similar logic as the \verb|scipy.integrate.solve_ivp()| function:
+    \lstinputlisting[style=pystyle, language=Python, firstline=3, lastline=9]{../helperscripts/integrate.py}
+
+    We then wrap our position and velocity into a single flattened vector, and define \verb|func| to take a flattened state, unwrap it, calculate the acceleration, and flatten the state again:
+    \lstinputlisting[style=pystyle, language=Python, firstline=82, lastline=97]{../01_solar_system.py}
+    In the same loop as the leapfrog integration we then use our RK4 integration to update state $i+1$ from state $i$, and unpack the states into position and velocity after the loop:
+    \lstinputlisting[style=pystyle, language=Python, firstline=260, lastline=270]{../01_solar_system.py}
+    We then plot the systems again using our previously defined \verb|plot_system()|, and plot the absolute difference in the X-coordinate between the RK4 and leapfrog methods:
+    \lstinputlisting[style=pystyle, language=Python, firstline=272, lastline=291]{../01_solar_system.py}
+    We choose to plot the absolute difference, as this gives a better indication of any potential drift. We then find figures \ref{fig:Q1c_orbits_full}, \ref{fig:Q1c_orbits_zoom}, \ref{fig:Q1c_comparison}.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\linewidth]{../figures/Q1c.png}
+        \caption{Orbital position of all celestial bodies, traced over 200 yr. \textbf{left:} XY-coordinates of the orbit. Note that this is \textit{not} a projection into the XY-plane. \textbf{Right:} Z-position over time. We find strong sinusoidal movement, indicating that the system is inclined with respect to the XY-plane. The period of the sine is a direct measure of the orbital period of the celestial body.}
+        \label{fig:Q1c_orbits_full}
+    \end{figure}
+
+    We find that the outermost planets have orbits that are very similar to those of the leapfrog integration scheme. The zoom-in on the four innermost planets shows no precession of the orbit of Mercury; the RK4 method has high enough accuracy to avoid phase shift of the argument of periapsis. \\
+    \\
+    Comparing the X-coordinate in figure \ref{fig:Q1c_comparison}, we find a disagreement between the methods that increases over time. Especially the innermost orbits (with Mercury very notable) show a large drift, with the outermost orbits showing little to no difference. This increasing disagreement over time can be explained by the following:
+    \begin{itemize}
+        \item The leapfrog method is 2nd order accurate, and the perceived (but not true) precession of the orbit is reflected in its X-coordinate over time, or
+        \item The RK4 method does not preserve energy, whereas the leapfrog integration method does. By the nature of the RK4 method, one would expect orbits to lose energy over time, resulting in an increase of the mean radius of the orbit. As such, the X-coordinate of the orbit will increase over time, which is indeed reflected by figure \ref{fig:Q1c_comparison}.
+    \end{itemize}
+    
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\linewidth]{../figures/Q1c_zoomed.png}
+        \caption{Orbital position of the 4 innermost planets, traced over 200 yr. \textbf{left:} XY-coordinates of the orbit. Note that this is \textit{not} a projection into the XY-plane. \textbf{Right:} Z-position over time. We find strong sinusoidal movement, indicating that the system is inclined with respect to the XY-plane. The period of the sine is a direct measure of the orbital period of the celestial body.}
+        \label{fig:Q1c_orbits_zoom}
+    \end{figure}
+
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\linewidth]{../figures/Q1c_comparison.png}
+        \caption{Comparison between the leapfrog and RK4 integration schemes. \textbf{Left:} X-coordinate over time using a leapfrog integration scheme. \textbf{Middle:} X-coordinate over time using an RK4 integration scheme. \textbf{Right:} Absolute difference $\big|X_\mathrm{RK} - X_\mathrm{LF}\big|$. We find a significant drift in the Z-coordinate between the methods, indicating that the methods disagree with each other with increasing severity over time.}
+        \label{fig:Q1c_comparison}
+    \end{figure}
+
+    \item We create a movie of the solar system using the function outlined below. The "timestep" of the movie (i.e. which frames are shown) is completely determined by the duration and fps specified in the function call. In our case, we create the movie at 30fps, with a duration of 10 seconds, resulting in a total of 300 frames shown. As the simulation was ran for 200 years at a resolution of 0.5 days, the total number of available frames is $\frac{200\,\mathrm{yr}}{0.5\,\mathrm{day}} = 14\,600$, resulting in a time per frame $\Delta t = 487 \cdot 0.5\,\mathrm{day} = 243.5\,\mathrm{day}$. The movie can be found under \verb|../figures/Q1_movie_3d.mp4|
+    \\
+    \lstinputlisting[style=pystyle, language=Python, firstline=306, lastline=310]{../01_solar_system.py}
+    \lstinputlisting[style=pystyle, language=Python, firstline=114, lastline=185]{../01_solar_system.py}
+\end{enumerate}
+
+\subsection{Full code}
+The full code is given by
+\lstinputlisting[style=pystyle, language=Python]{../01_solar_system.py}
+with no textual output.
