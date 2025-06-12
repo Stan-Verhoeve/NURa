@@ -16,27 +16,6 @@ class KDNode:
     start_idx: int
     length: int
 
-    def __repr__(self):
-        # def recurse(node, prefix="", is_left=True):
-        #     if node is None:
-        #         return prefix + ("└── " if is_left else "├── ") + "None\n"
-        # 
-        #     node_str = prefix + ("└── " if is_left else "├── ") + f"depth: {node.depth}\n"
-        #     new_prefix = prefix + ("    " if is_left else "│   ")
-        #     node_str += new_prefix + f"aos: {node.axis_of_split}\n"
-        #     node_str += new_prefix + f"coords: {node.coords}\n"
-        #     node_str += new_prefix + f"bbox: {node.boundary_coords}\n"
-        # 
-        #     node_str += new_prefix + "left child:\n"
-        #     node_str += recurse(node.left_child, new_prefix + "    ", True)
-        #     node_str += new_prefix + "right child:\n"
-        #     node_str += recurse(node.right_child, new_prefix + "    ", False)
-        # 
-        #     return node_str
-        # pdflatex doesn't like the above
-        return "KDTree" # "KDTree\n" + recurse(self, "", True)
-
-
 class KDTree:
     """
     Class that builds and handles KDTree, and includes NN search
@@ -187,28 +166,6 @@ class octnode:
     # Particle info
     start_idx : int
     length: int
-
-    def __repr__(self):
-        # def recurse(node, prefix="", is_left=True):
-        #     if node is None:
-        #         return prefix + ("└── " if is_left else "├── ") + "None\n"
-        # 
-        #     node_str = prefix + ("└── " if is_left else "├── ") + f"depth: {node.depth}\n"
-        #     new_prefix = prefix + ("    " if is_left else "│   ")
-        #     # node_str += new_prefix + f"aos: {node.axis_of_split}\n"
-        #     node_str += new_prefix + f"coords: {node.pos}\n"
-        #     node_str += new_prefix + f"idx pos: {node.index}\n"
-        # 
-        #     node_str += new_prefix + f"start idx: {node.start_idx}\n"
-        #     node_str += new_prefix + f"length: {node.length}\n"
-        #     # node_str += recurse(node.left_child, new_prefix + "    ", True)
-        #     for i, child in enumerate(node.children):
-        #         node_str += new_prefix + f"child {i+1}:\n"
-        #         node_str += recurse(child, new_prefix + "    ", False)
-        # 
-        #     return node_str
-        # pdflatex doesn't like the above
-        return "Octree" # "Octree\n" + recurse(self, "", True)
 
 class octree:
     def __init__(self, data, max_depth):
